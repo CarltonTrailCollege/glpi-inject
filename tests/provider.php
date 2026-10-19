@@ -144,6 +144,9 @@ namespace {
     assert($menu['title'] === 'GLPI Inject');
     assert($menu['options']['client']['title'] === 'Import CSV');
     assert($menu['options']['models']['title'] === 'Import models');
+    $menu_tree = \GlpiPlugin\Glpiinject\Menu::addToMenu(['tools' => ['title' => 'Tools', 'content' => []]]);
+    assert($menu_tree['tools']['title'] === 'Tools');
+    assert($menu_tree['tools']['content']['glpiinject']['title'] === 'GLPI Inject');
 
-    echo "Custom asset discovery and GLPI Inject menu registration checks passed.\n";
+    echo "Custom asset discovery and cache-independent GLPI Inject menu checks passed.\n";
 }

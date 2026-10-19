@@ -6,6 +6,13 @@ use CommonGLPI;
 
 final class Menu extends CommonGLPI
 {
+    public static function addToMenu(array $menu): array
+    {
+        $menu['tools']['content']['glpiinject'] = self::getMenuContent();
+
+        return $menu;
+    }
+
     public static function getMenuName($nb = 0): string
     {
         return 'GLPI Inject';

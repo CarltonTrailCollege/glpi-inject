@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.5] - 2026-10-19
+
+### Fixed
+
+- Add the GLPI Inject Tools entry after the cached menu is loaded, so existing sessions see it without affecting Data Injection.
+
 ## [0.1.0-alpha.4] - 2026-10-19
 
 ### Fixed
