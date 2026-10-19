@@ -18,6 +18,11 @@ namespace {
             return true;
         }
 
+        public function canCreate(): bool
+        {
+            return true;
+        }
+
         public static function getTypeName(int $count = 0): string
         {
             return 'Item';
@@ -36,14 +41,16 @@ namespace Glpi\Asset {
 
     final class AssetDefinitionManager
     {
+        public static array $definitions = [];
+
         public static function getInstance(): self
         {
             return new self();
         }
 
-        public function getDefinitions(bool $only_active = false): array
+        public function getDefinitions(): array
         {
-            return [];
+            return self::$definitions;
         }
     }
 }
@@ -71,6 +78,24 @@ namespace {
         }
     }
 
+    final class Computer extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Computer';
+        }
+    }
+
+    final class TestAssetDefinition
+    {
+        public array $fields = ['name' => 'Vehicle', 'is_active' => 1];
+
+        public function getAssetClassName(): string
+        {
+            return TestCustomAsset::class;
+        }
+    }
+
     function getItemTypeForTable(string $table): string
     {
         return \Glpi\Asset\Asset::class;
@@ -83,12 +108,14 @@ namespace {
 
     require_once dirname(__DIR__) . '/src/AssetTargetProvider.php';
 
-    $CFG_GLPI['asset_types'] = [TestCustomAsset::class];
+    $CFG_GLPI['asset_types'] = [Computer::class];
+    \Glpi\Asset\AssetDefinitionManager::$definitions = [new TestAssetDefinition()];
     $targets = (new \GlpiPlugin\Glpiinject\AssetTargetProvider())->getTargets();
     $target = $targets[TestCustomAsset::class];
 
-    assert($target['label'] === 'Custom Equipment');
-    assert($target['mapping_options'][0]['itemtype_label'] === 'Custom Equipment');
+    assert(isset($targets[Computer::class]));
+    assert($target['label'] === 'Vehicle');
+    assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
 
     echo "Custom asset discovery handles generic Asset type labels safely.\n";

@@ -15,7 +15,7 @@ final class ImportModel extends CommonDBTM
 
     public static function getMenuName($nb = 0): string
     {
-        return __('GLPI Inject', 'glpiinject');
+        return 'GLPI Inject';
     }
 
     public static function getMenuContent(): array

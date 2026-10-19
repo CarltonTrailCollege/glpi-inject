@@ -8,6 +8,99 @@ use Search;
 
 final class AssetTargetProvider
 {
+    private const CORE_TARGETS = [
+        'Appliance',
+        'AutoUpdateSystem',
+        'Budget',
+        'CartridgeItem',
+        'CartridgeItemType',
+        'Certificate',
+        'Computer',
+        'ComputerModel',
+        'ComputerType',
+        'ConsumableItem',
+        'ConsumableItemType',
+        'Contact',
+        'ContactType',
+        'Contract',
+        'ContractType',
+        'Database',
+        'DatabaseInstance',
+        'Contact_Supplier',
+        'Contract_Item',
+        'Contract_Supplier',
+        'DeviceCase',
+        'DeviceCaseType',
+        'DeviceControl',
+        'DeviceDrive',
+        'DeviceHardDrive',
+        'DeviceMemory',
+        'DeviceMemoryType',
+        'DeviceMotherboard',
+        'DeviceNetworkCard',
+        'DeviceProcessor',
+        'DocumentType',
+        'Domain',
+        'Entity',
+        'Filesystem',
+        'Group',
+        'Group_User',
+        'ITILCategory',
+        'ITILFollowupTemplate',
+        'InterfaceType',
+        'KnowbaseItem',
+        'Location',
+        'Manufacturer',
+        'Monitor',
+        'MonitorModel',
+        'MonitorType',
+        'Network',
+        'NetworkEquipment',
+        'NetworkEquipmentModel',
+        'NetworkEquipmentType',
+        'NetworkInterface',
+        'NetworkPort',
+        'Networkport_Vlan',
+        'NetworkName',
+        'Notepad',
+        'OperatingSystem',
+        'OperatingSystemEdition',
+        'OperatingSystemKernel',
+        'OperatingSystemKernelVersion',
+        'OperatingSystemServicePack',
+        'OperatingSystemVersion',
+        'Peripheral',
+        'PeripheralModel',
+        'PeripheralType',
+        'Phone',
+        'PhoneModel',
+        'PhonePowerSupply',
+        'PhoneType',
+        'Printer',
+        'PrinterModel',
+        'PrinterType',
+        'Profile',
+        'Profile_User',
+        'RequestType',
+        'Software',
+        'SoftwareLicense',
+        'SoftwareLicenseType',
+        'SoftwareVersion',
+        'SolutionTemplate',
+        'SolutionType',
+        'Socket',
+        'State',
+        'Supplier',
+        'SupplierType',
+        'TaskCategory',
+        'TaskTemplate',
+        'User',
+        'VirtualMachineState',
+        'VirtualMachineSystem',
+        'VirtualMachineType',
+        'Vlan',
+    ];
+
     /**
      * @return array<string, array{label: string, itemtype: class-string<CommonDBTM>, fields: array}>
      */
@@ -17,26 +110,61 @@ final class AssetTargetProvider
         /** @var array $CFG_GLPI */
         global $CFG_GLPI;
 
-        foreach ($CFG_GLPI['asset_types'] ?? [] as $itemtype) {
+        $core_candidates = self::CORE_TARGETS;
+        foreach ($CFG_GLPI as $config_key => $configured_types) {
+            if (
+                is_array($configured_types)
+                && (str_ends_with((string) $config_key, '_types') || str_ends_with((string) $config_key, '_itemtypes'))
+            ) {
+                foreach ($configured_types as $configured_type) {
+                    if (is_string($configured_type)) {
+                        $core_candidates[] = $configured_type;
+                    }
+                }
+            }
+        }
+        $core_itemtypes = array_unique(array_merge($core_candidates, $CFG_GLPI['asset_types'] ?? []));
+        foreach ($core_itemtypes as $candidate) {
+            $itemtype = is_string($candidate) && class_exists($candidate) ? $candidate : $candidate;
+            if (!is_string($itemtype) || !is_a($itemtype, CommonDBTM::class, true)) {
+                continue;
+            }
+
+            try {
+                $item = new $itemtype();
+                if (!$item->canCreate()) {
+                    continue;
+                }
+                $label = $this->getSafeTypeName($itemtype, $this->fallbackTypeName($itemtype));
+                $targets[$itemtype] = [
+                    'label' => $label,
+                    'itemtype' => $itemtype,
+                    'fields' => $this->getFields($itemtype),
+                    'mapping_options' => $this->getMappingOptions($itemtype, $label),
+                ];
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        $definitions = AssetDefinitionManager::getInstance()->getDefinitions();
+
+        foreach ($definitions as $definition) {
+            if (empty($definition->fields['is_active'])) {
+                continue;
+            }
+            $itemtype = $definition->getAssetClassName();
+
             if (!is_a($itemtype, CommonDBTM::class, true)) {
                 continue;
             }
 
-            $label = $this->getSafeTypeName($itemtype, $this->fallbackTypeName($itemtype));
-            $targets[$itemtype] = [
-                'label' => $label,
-                'itemtype' => $itemtype,
-                'fields' => $this->getFields($itemtype),
-                'mapping_options' => $this->getMappingOptions($itemtype, $label),
-            ];
-        }
-
-        $definitions = AssetDefinitionManager::getInstance()->getDefinitions(only_active: true);
-
-        foreach ($definitions as $definition) {
-            $itemtype = $definition->getAssetClassName();
-
-            if (!is_a($itemtype, CommonDBTM::class, true)) {
+            try {
+                $item = new $itemtype();
+                if (!$item->canCreate()) {
+                    continue;
+                }
+            } catch (\Throwable) {
                 continue;
             }
 
@@ -48,6 +176,7 @@ final class AssetTargetProvider
             ];
         }
 
+        uasort($targets, static fn (array $left, array $right): int => strnatcasecmp($left['label'], $right['label']));
         return $targets;
     }
 

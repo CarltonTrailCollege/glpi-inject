@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.3] - 2026-10-19
+
+### Fixed
+
+- Offer the broader set of GLPI primary itemtypes supported by Data Injection while filtering by runtime class validity and create rights.
+- Include active custom asset definitions, including generated Vehicles, Furniture, and other asset types.
+- Use distinct GLPI Inject, Import CSV, and Import models navigation labels.
+
 ## [0.1.0-alpha.2] - 2026-10-19
 
 ### Fixed
