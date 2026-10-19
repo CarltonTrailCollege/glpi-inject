@@ -1,0 +1,175 @@
+<div class="page-header mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h1 class="mb-0">{{ __('Data injection', 'glpiinject') }}</h1>
+    <a class="btn btn-outline-secondary" href="{{ root_doc }}/plugins/glpiinject/front/models.php">{{ __('Model management', 'glpiinject') }}</a>
+</div>
+
+{% if error %}
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+{% endif %}
+
+<div class="row g-3">
+    <main class="col-12">
+        <section class="border rounded p-3 mb-3">
+            <h2 class="h4">{{ __('Client Injection Configuration', 'glpiinject') }}</h2>
+            {% if models is empty %}
+                <div class="alert alert-info mb-0">{{ __('No model currently available.', 'glpiinject') }} <a href="{{ root_doc }}/plugins/glpiinject/front/models.php">{{ __('Create an import model', 'glpiinject') }}</a></div>
+            {% else %}
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-12 col-lg-8"><label class="form-label" for="model-select">{{ __('Model', 'glpiinject') }}</label><select class="form-select" id="model-select" name="id" required><option value="">{{ __('Select a model', 'glpiinject') }}</option>{% for entry in models %}<option value="{{ entry.id }}" {{ model and model.id == entry.id ? 'selected' : '' }}>{{ entry.name }}</option>{% endfor %}</select></div>
+                    <div class="col-12 col-lg-4"><button class="btn btn-primary" type="submit">{{ __('Continue', 'glpiinject') }}</button></div>
+                </form>
+            {% endif %}
+        </section>
+
+        {% if model %}
+            <section class="border rounded p-3 mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div><h2 class="h3 mb-1">{{ model.name }}</h2><div class="text-muted">{{ model.itemtype }}</div></div>
+                    {% if model.csv_file %}<span class="badge bg-success">{{ __('CSV loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Waiting for CSV', 'glpiinject') }}</span>{% endif %}
+                </div>
+                <form method="post" enctype="multipart/form-data" class="row g-3 align-items-end" onsubmit="return {{ model.csv_file ? 'window.confirm(' ~ __('Watch out, you are about to inject data into GLPI. Are you sure you want to do it?', 'glpiinject')|json_encode ~ ')' : 'true' }};">
+                    <input type="hidden" name="models_id" value="{{ model.id }}">
+                    <input type="hidden" name="action" value="upload_csv">
+                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
+                    <div class="col-12"><h3 class="h5">{{ __('File to inject', 'glpiinject') }}</h3></div>
+                    <div class="col-12 col-lg-6"><label class="form-label" for="csv-file">{{ __('Choose a file', 'glpiinject') }}</label><input class="form-control" id="csv-file" name="csv_file" type="file" accept=".csv,text/csv" required></div>
+                    <div class="col-12 col-md-4 col-lg-2"><label class="form-label" for="file-encoding">{{ __('File encoding', 'glpiinject') }}</label><select class="form-select" id="file-encoding" name="file_encoding"><option {{ model.file_encoding == 'Automatic' ? 'selected' : '' }}>{{ __('Automatic detection', 'glpiinject') }}</option><option {{ model.file_encoding == 'UTF-8' ? 'selected' : '' }}>UTF-8</option><option {{ model.file_encoding == 'ISO-8859-1' ? 'selected' : '' }}>ISO-8859-1</option><option {{ model.file_encoding == 'Windows-1252' ? 'selected' : '' }}>Windows-1252</option></select></div>
+                    <div class="col-12 col-md-4 col-lg-2"><label class="form-label" for="upload-delimiter">{{ __('File delimiter', 'glpiinject') }}</label><select class="form-select" id="upload-delimiter" name="delimiter"><option value=";" {{ model.delimiter == ';' ? 'selected' : '' }}>{{ __('Semicolon', 'glpiinject') }}</option><option value="," {{ model.delimiter == ',' ? 'selected' : '' }}>{{ __('Comma', 'glpiinject') }}</option><option value="|" {{ model.delimiter == '|' ? 'selected' : '' }}>{{ __('Pipe', 'glpiinject') }}</option><option value="&#9;" {{ model.delimiter == "\t" ? 'selected' : '' }}>{{ __('Tab', 'glpiinject') }}</option></select></div>
+                    <div class="col-12 col-md-4 col-lg-2"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="has_header" value="1" {{ model.has_header ? 'checked' : '' }}><span class="form-check-label">{{ __('Header of the file', 'glpiinject') }}</span></label></div>
+                    <div class="col-12"><button class="btn btn-primary" type="submit">{{ __('Load this file', 'glpiinject') }}</button></div>
+                </form>
+            </section>
+
+            {% if preview %}
+                <section class="border rounded p-3 mb-3">
+                    <h2 class="h4">{{ __('Column mapping', 'glpiinject') }}</h2>
+                    <form method="post">
+                        <input type="hidden" name="models_id" value="{{ model.id }}">
+                        <input type="hidden" name="action" value="save_mapping">
+                        <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-md-4"><label class="form-label" for="match-field">{{ __('Update matching records by', 'glpiinject') }}</label><select class="form-select" id="match-field" name="match_field"><option value="">{{ __('Always create new records', 'glpiinject') }}</option>{% for field in targets[model.itemtype].fields %}{% if not field.is_custom %}<option value="{{ field.field }}" {{ model.match_field == field.field ? 'selected' : '' }}>{{ field.name }}</option>{% endif %}{% endfor %}</select></div>
+                        </div>
+                        <div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead><tr><th>{{ __('Header of the file', 'glpiinject') }}</th><th>{{ __('Tables', 'glpiinject') }}</th><th>{{ _n('Field', 'Fields', 2) }}</th><th>{{ __('Link field', 'glpiinject') }}</th><th>{{ __('Mandatory', 'glpiinject') }}</th></tr></thead><tbody>
+                            {% for header in preview.headers %}
+                                {% set column_index = loop.index0 %}
+                                {% set saved_mapping = model.mappings[column_index] ?? {} %}
+                                {% set selected_option = null %}
+                                {% for option in targets[model.itemtype].mapping_options %}
+                                    {% if saved_mapping.itemtype is defined and saved_mapping.itemtype == option.itemtype and saved_mapping.field == option.field and saved_mapping.linkfield == option.linkfield %}
+                                        {% set selected_option = option %}
+                                    {% endif %}
+                                    {% if saved_mapping is not iterable and saved_mapping == option.field %}
+                                        {% set selected_option = option %}
+                                    {% endif %}
+                                {% endfor %}
+                                <tr>
+                                    <th scope="row">{{ header }}</th>
+                                    <td class="mapping-type" data-column="{{ column_index }}">{{ selected_option.itemtype_label ?? __('Choose a table', 'glpiinject') }}</td>
+                                    <td>
+                                        <select class="form-select mapping-option" data-column="{{ column_index }}" name="mapping[{{ column_index }}][option]">
+                                            <option value="">{{ __('Do not import', 'glpiinject') }}</option>
+                                            {% for option in targets[model.itemtype].mapping_options %}
+                                                {% set option_index = loop.index0 %}
+                                                <option value="{{ option_index }}" data-type="{{ option.itemtype_label }}" data-field="{{ option.field }}" data-linkfield="{{ option.linkfield }}" {{ selected_option and selected_option.itemtype == option.itemtype and selected_option.field == option.field and selected_option.linkfield == option.linkfield ? 'selected' : '' }}>{{ option.label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td><code class="mapping-linkfield" data-column="{{ column_index }}">{{ selected_option.linkfield ?? '—' }}</code></td>
+                                    <td class="text-center"><input class="form-check-input" type="checkbox" name="mapping[{{ column_index }}][is_mandatory]" value="1" {{ saved_mapping.is_mandatory ?? false ? 'checked' : '' }} aria-label="{{ __('Mandatory field', 'glpiinject') }}"></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody></table></div>
+                        <button class="btn btn-primary" type="submit">{{ __('Save mapping', 'glpiinject') }}</button>
+                    </form>
+                </section>
+
+                <section class="border rounded p-3 mb-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><h2 class="h4 mb-0">{{ __('Preview', 'glpiinject') }}</h2><form method="post" class="d-flex gap-2"><input type="hidden" name="models_id" value="{{ model.id }}"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-outline-secondary" name="action" value="preview" type="submit">{{ __('Refresh preview', 'glpiinject') }}</button><button class="btn btn-success" name="action" value="run_import" type="submit" onclick="return window.confirm({{ __('Watch out, you are about to inject data into GLPI. Are you sure you want to do it?', 'glpiinject')|json_encode }});" {{ model.mappings is empty ? 'disabled' : '' }}>{{ __('Launch the import', 'glpiinject') }}</button></form></div>
+                    <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th>{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
+                        {% for record in preview.records %}<tr><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td>{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}<td>{% if record.valid %}<span class="badge bg-success">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger">{{ record.errors|join('; ') }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="20" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
+                    </tbody></table></div>
+                </section>
+            {% endif %}
+
+            {% if selected_run and selected_run.status == 'running' %}
+                <section class="border rounded p-3 mb-3" id="import-progress" data-batch-url="{{ batch_url }}" data-run-id="{{ selected_run.id }}" data-offset="{{ selected_run.processed }}" data-total="{{ selected_run.total }}" data-csrf-token="{{ csrf_token }}">
+                    <div class="hr-text mb-3"><i class="ti ti-chart-bar"></i><span>{{ __('Import progress', 'glpiinject') }}</span></div>
+                    <div class="progress" role="progressbar" aria-label="{{ __('Injection of the file', 'glpiinject') }}" aria-valuenow="{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}%">{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}%</div>
+                    </div>
+                    <p class="text-muted text-center mt-2" data-progress-status>{{ __('Injection of the file', 'glpiinject') }}: {{ selected_run.processed }} / {{ selected_run.total }} {{ __('lines', 'glpiinject') }}</p>
+                    <div class="alert alert-danger d-none" data-progress-error role="alert"></div>
+                </section>
+            {% endif %}
+
+            {% if import_results and import_results.status != 'running' %}
+                <section class="border rounded p-3"><div class="hr-text mb-3"><i class="ti ti-chart-bar"></i><span>{{ __('Injection results', 'glpiinject') }}</span></div><p class="text-center fs-5">{% if import_results.failed == 0 %}<i class="ti ti-check text-success"></i> {{ __('Injection successful', 'glpiinject') }}{% else %}<i class="ti ti-alert-triangle text-danger"></i> {{ __('Injection encounters errors', 'glpiinject') }}{% endif %}</p><p class="text-center">{{ __('Status', 'glpiinject') }}: {{ import_results.status }} · {{ __('Processed', 'glpiinject') }}: {{ import_results.processed }} / {{ import_results.total }}</p><p class="text-center">{{ __('Created', 'glpiinject') }}: {{ import_results.created }} · {{ __('Updated', 'glpiinject') }}: {{ import_results.updated }} · {{ __('Failed', 'glpiinject') }}: {{ import_results.failed }}</p><div class="table-responsive"><table class="table table-sm"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th><th>{{ __('Result', 'glpiinject') }}</th><th>{{ __('Details', 'glpiinject') }}</th></tr></thead><tbody>{% for row in import_results.rows %}<tr><td>{{ row.line }}</td><td>{{ row.status }}</td><td>{{ row.message ?? '' }}</td></tr>{% endfor %}</tbody></table></div><div class="d-flex justify-content-center gap-2">{% if import_results.failed > 0 and selected_run %}<a class="btn btn-outline-danger" href="{{ root_doc }}/plugins/glpiinject/front/export_errors.php?run={{ selected_run.id }}"><i class="ti ti-file-type-csv"></i> {{ __('Export the log', 'glpiinject') }}</a>{% endif %}<a class="btn btn-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php">{{ __('Finish', 'glpiinject') }}</a></div></section>
+            {% endif %}
+        {% else %}
+            <div class="border rounded p-4 text-center text-muted">{{ __('Select an import model or create one to get started.', 'glpiinject') }}</div>
+        {% endif %}
+    </main>
+</div>
+
+<script>
+document.querySelectorAll('.mapping-option').forEach((select) => {
+    select.addEventListener('change', () => {
+        const selected = select.selectedOptions[0];
+        const column = select.dataset.column;
+        document.querySelector(`.mapping-type[data-column="${column}"]`).textContent = selected.dataset.type || '{{ __('Choose a table', 'glpiinject')|e('js') }}';
+        document.querySelector(`.mapping-linkfield[data-column="${column}"]`).textContent = selected.dataset.linkfield || '—';
+    });
+});
+
+const progress = document.getElementById('import-progress');
+if (progress) {
+    const progressBar = progress.querySelector('.progress-bar');
+    const progressTrack = progress.querySelector('.progress');
+    const status = progress.querySelector('[data-progress-status]');
+    const error = progress.querySelector('[data-progress-error]');
+    let offset = Number(progress.dataset.offset || 0);
+    const total = Number(progress.dataset.total || 0);
+
+    const processBatch = async () => {
+        const body = new URLSearchParams({
+            run_id: progress.dataset.runId,
+            offset: String(offset),
+            batch_size: '10',
+            _glpi_csrf_token: progress.dataset.csrfToken,
+        });
+        try {
+            const response = await fetch(progress.dataset.batchUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body,
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || '{{ __('The import batch failed.', 'glpiinject')|e('js') }}');
+            }
+            offset = result.offset;
+            const percent = Math.min(100, Number(result.progress || 0));
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+            progressTrack.setAttribute('aria-valuenow', String(percent));
+            status.textContent = `{{ __('Injection of the file', 'glpiinject')|e('js') }}: ${result.processed} / ${result.total} {{ __('lines', 'glpiinject')|e('js') }}`;
+            if (result.done) {
+                progressBar.classList.remove('progress-bar-animated');
+                window.location.reload();
+                return;
+            }
+            window.setTimeout(processBatch, 80);
+        } catch (exception) {
+            error.textContent = exception.message;
+            error.classList.remove('d-none');
+            progressBar.classList.remove('progress-bar-animated');
+        }
+    };
+
+    if (offset < total) {
+        processBatch();
+    }
+}
+</script>

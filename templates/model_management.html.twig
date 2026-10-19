@@ -1,0 +1,90 @@
+<div class="page-header mb-3">
+    <h1>{{ __('Import models', 'glpiinject') }}</h1>
+    <p class="text-muted">{{ __('Create reusable CSV import definitions.', 'glpiinject') }}</p>
+</div>
+
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+
+<div class="row g-3">
+    <section class="col-12 col-xl-7">
+        <div class="border rounded p-3">
+            <h2 class="h4">{{ __('Available models', 'glpiinject') }}</h2>
+            {% if models is empty %}
+                <div class="alert alert-info mb-0">{{ __('No model currently available.', 'glpiinject') }}</div>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Asset type', 'glpiinject') }}</th><th>{{ __('CSV', 'glpiinject') }}</th><th></th></tr></thead>
+                        <tbody>
+                            {% for model in models %}
+                                <tr>
+                                    <th scope="row">{{ model.name }}</th>
+                                    <td>{{ targets[model.itemtype].label ?? model.itemtype }}</td>
+                                    <td>{% if model.csv_file %}<span class="badge bg-success">{{ __('Loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Not loaded', 'glpiinject') }}</span>{% endif %}</td>
+                                    <td class="text-end"><div class="d-inline-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="?edit={{ model.id }}">{{ __('Edit') }}</a><a class="btn btn-sm btn-outline-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php?id={{ model.id }}">{{ __('Use model', 'glpiinject') }}</a><form method="post" onsubmit="return confirm('{{ __('Delete this model?', 'glpiinject')|e('js') }}');"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ model.id }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{{ __('Delete') }}"><i class="ti ti-trash"></i></button></form></div></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="col-12 col-xl-5">
+        <div class="border rounded p-3">
+            <h2 class="h4">{{ edit_model ? __('Edit model', 'glpiinject') : __('Create model', 'glpiinject') }}</h2>
+            {% if targets is empty %}
+                <div class="alert alert-warning mb-0">{{ __('No available asset types.', 'glpiinject') }}</div>
+            {% else %}
+                <form method="post">
+                    <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="{{ edit_model ? 'update' : 'create' }}">
+                    {% if edit_model %}<input type="hidden" name="id" value="{{ edit_model.id }}">{% endif %}
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation"><button class="nav-link active" id="general-tab" data-model-tab="general" type="button">{{ __('General') }}</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link" id="csv-tab" data-model-tab="csv" type="button">{{ __('CSV format', 'glpiinject') }}</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link" id="advanced-tab" data-model-tab="advanced" type="button">{{ __('Advanced options', 'glpiinject') }}</button></li>
+                    </ul>
+                    <div class="model-tab-pane" data-model-pane="general">
+                    <div class="mb-3"><label class="form-label" for="model-name">{{ __('Name') }}</label><input class="form-control" id="model-name" name="name" maxlength="255" value="{{ edit_model.name ?? '' }}" required></div>
+                    <div class="mb-3"><label class="form-label" for="model-itemtype">{{ __('Type of data to import', 'glpiinject') }}</label>{% if edit_model %}<input class="form-control" id="model-itemtype" value="{{ targets[edit_model.itemtype].label ?? edit_model.itemtype }}" disabled>{% else %}<select class="form-select" id="model-itemtype" name="itemtype" required>{% for target in targets %}<option value="{{ target.itemtype }}">{{ target.label }}</option>{% endfor %}</select>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label" for="model-comment">{{ __('Comments') }}</label><textarea class="form-control" id="model-comment" name="comment" rows="2">{{ edit_model.comment ?? '' }}</textarea></div>
+                    <label class="form-check mb-3"><input class="form-check-input" type="checkbox" name="is_private" value="1" {{ not edit_model or edit_model.is_private ? 'checked' : '' }}><span class="form-check-label">{{ __('Private model', 'glpiinject') }}</span></label>
+                    </div>
+                    <div class="model-tab-pane d-none" data-model-pane="csv">
+                    <fieldset class="mb-3"><legend class="fs-6">{{ __('Specific file format options', 'glpiinject') }}</legend><div class="mb-2"><label class="form-label" for="delimiter">{{ __('File delimiter', 'glpiinject') }}</label><select class="form-select" id="delimiter" name="delimiter"><option value=";" {{ not edit_model or edit_model.delimiter == ';' ? 'selected' : '' }}>{{ __('Semicolon', 'glpiinject') }}</option><option value="," {{ edit_model.delimiter == ',' ? 'selected' : '' }}>{{ __('Comma', 'glpiinject') }}</option><option value="|" {{ edit_model.delimiter == '|' ? 'selected' : '' }}>{{ __('Pipe', 'glpiinject') }}</option><option value="&#9;" {{ edit_model.delimiter == "\t" ? 'selected' : '' }}>{{ __('Tab', 'glpiinject') }}</option></select></div><label class="form-check mb-3"><input class="form-check-input" type="checkbox" name="has_header" value="1" {{ not edit_model or edit_model.has_header ? 'checked' : '' }}><span class="form-check-label">{{ __('Header of the file', 'glpiinject') }}</span></label><div class="row g-2"><div class="col-12 col-md-6"><label class="form-label" for="date-format">{{ __('Date format', 'glpiinject') }}</label><select class="form-select" id="date-format" name="date_format"><option value="yyyy-mm-dd" {{ not edit_model or edit_model.date_format == 'yyyy-mm-dd' ? 'selected' : '' }}>yyyy-mm-dd</option><option value="dd-mm-yyyy" {{ edit_model.date_format == 'dd-mm-yyyy' ? 'selected' : '' }}>dd-mm-yyyy</option><option value="mm-dd-yyyy" {{ edit_model.date_format == 'mm-dd-yyyy' ? 'selected' : '' }}>mm-dd-yyyy</option></select></div><div class="col-12 col-md-6"><label class="form-label" for="float-format">{{ __('Number format', 'glpiinject') }}</label><select class="form-select" id="float-format" name="float_format"><option value="1,234.56" {{ not edit_model or edit_model.float_format == '1,234.56' ? 'selected' : '' }}>1,234.56</option><option value="1 234,56" {{ edit_model.float_format == '1 234,56' ? 'selected' : '' }}>1 234,56</option></select></div></div></fieldset>
+                    </div>
+                    <div class="model-tab-pane d-none" data-model-pane="advanced">
+                    <fieldset class="mb-3"><legend class="fs-6">{{ __('Import behavior', 'glpiinject') }}</legend><label class="form-check"><input class="form-check-input" type="checkbox" name="behavior_add" value="1" {{ not edit_model or edit_model.behavior_add ? 'checked' : '' }}><span class="form-check-label">{{ __('Allow lines creation', 'glpiinject') }}</span></label><label class="form-check"><input class="form-check-input" type="checkbox" name="behavior_update" value="1" {{ edit_model and edit_model.behavior_update ? 'checked' : '' }}><span class="form-check-label">{{ __('Allow lines update', 'glpiinject') }}</span></label><label class="form-check"><input class="form-check-input" type="checkbox" name="can_add_dropdown" value="1" {{ edit_model and edit_model.can_add_dropdown ? 'checked' : '' }}><span class="form-check-label">{{ __('Allow creation of dropdowns (Except Entity)', 'glpiinject') }}</span></label></fieldset>
+                    </div>
+                    <button class="btn btn-primary" type="submit">{{ edit_model ? __('Save') : __('Add') }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+
+<section class="mt-4">
+    <h2 class="h4">{{ __('Recent import runs', 'glpiinject') }}</h2>
+    {% if runs is empty %}
+        <p class="text-muted">{{ __('No import history is available.', 'glpiinject') }}</p>
+    {% else %}
+        <div class="table-responsive"><table class="table table-hover align-middle"><thead><tr><th>{{ __('Model', 'glpiinject') }}</th><th>{{ __('Status') }}</th><th>{{ __('Progress', 'glpiinject') }}</th><th>{{ __('Created', 'glpiinject') }}</th><th>{{ __('Updated', 'glpiinject') }}</th><th>{{ __('Failed', 'glpiinject') }}</th><th></th></tr></thead><tbody>
+            {% for run in runs %}
+                {% set run_model = models|filter(candidate => candidate.id == run.models_id)|first %}
+                <tr><th scope="row">{{ run_model.name ?? ('#' ~ run.models_id) }}</th><td><span class="badge {{ run.status == 'completed' ? 'bg-success' : (run.status == 'failed' ? 'bg-danger' : 'bg-info') }}">{{ run.status }}</span></td><td>{{ run.processed }} / {{ run.total }}</td><td>{{ run.created }}</td><td>{{ run.updated }}</td><td>{{ run.failed }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php?id={{ run.models_id }}&amp;run={{ run.id }}">{{ __('View results', 'glpiinject') }}</a></td></tr>
+            {% endfor %}
+        </tbody></table></div>
+    {% endif %}
+</section>
+
+<script>
+document.querySelectorAll('[data-model-tab]').forEach((tab) => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('[data-model-tab]').forEach((button) => button.classList.toggle('active', button === tab));
+        document.querySelectorAll('[data-model-pane]').forEach((pane) => pane.classList.toggle('d-none', pane.dataset.modelPane !== tab.dataset.modelTab));
+    });
+});
+</script>
