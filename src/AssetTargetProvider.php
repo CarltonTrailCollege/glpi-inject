@@ -22,11 +22,12 @@ final class AssetTargetProvider
                 continue;
             }
 
+            $label = $this->getSafeTypeName($itemtype, $this->fallbackTypeName($itemtype));
             $targets[$itemtype] = [
-                'label' => $itemtype::getTypeName(1),
+                'label' => $label,
                 'itemtype' => $itemtype,
                 'fields' => $this->getFields($itemtype),
-                'mapping_options' => $this->getMappingOptions($itemtype),
+                'mapping_options' => $this->getMappingOptions($itemtype, $label),
             ];
         }
 
@@ -43,7 +44,7 @@ final class AssetTargetProvider
                 'label' => $definition->fields['name'],
                 'itemtype' => $itemtype,
                 'fields' => $this->getFields($itemtype),
-                'mapping_options' => $this->getMappingOptions($itemtype),
+                'mapping_options' => $this->getMappingOptions($itemtype, (string) $definition->fields['name']),
             ];
         }
 
@@ -75,7 +76,7 @@ final class AssetTargetProvider
         return $fields;
     }
 
-    private function getMappingOptions(string $primary_itemtype): array
+    private function getMappingOptions(string $primary_itemtype, string $primary_label): array
     {
         $primary = new $primary_itemtype();
         $primary->getEmpty();
@@ -106,7 +107,9 @@ final class AssetTargetProvider
 
             $options[] = [
                 'itemtype' => $is_primary_field ? $primary_itemtype : $destination_itemtype,
-                'itemtype_label' => $destination_itemtype::getTypeName(1),
+                'itemtype_label' => $is_primary_field
+                    ? $primary_label
+                    : $this->getSafeTypeName($destination_itemtype, (string) $option['name']),
                 'field' => (string) $option['field'],
                 'linkfield' => $linkfield,
                 'label' => (string) $option['name'],
@@ -118,6 +121,24 @@ final class AssetTargetProvider
         }
 
         return $options;
+    }
+
+    private function getSafeTypeName(string $itemtype, string $fallback): string
+    {
+        try {
+            if (is_a($itemtype, CommonDBTM::class, true) && method_exists($itemtype, 'getTypeName')) {
+                return (string) $itemtype::getTypeName(1);
+            }
+        } catch (\Throwable) {
+        }
+
+        return $fallback;
+    }
+
+    private function fallbackTypeName(string $itemtype): string
+    {
+        $parts = explode('\\', $itemtype);
+        return end($parts) ?: $itemtype;
     }
 
     public function getTarget(string $itemtype): ?array

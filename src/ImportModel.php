@@ -15,7 +15,7 @@ final class ImportModel extends CommonDBTM
 
     public static function getMenuName($nb = 0): string
     {
-        return __('Data injection', 'glpiinject');
+        return __('GLPI Inject', 'glpiinject');
     }
 
     public static function getMenuContent(): array
@@ -31,7 +31,7 @@ final class ImportModel extends CommonDBTM
             'icon' => 'ti ti-file-import',
             'options' => [
                 'client' => [
-                    'title' => __('Injection of the file', 'glpiinject'),
+                    'title' => __('Import CSV', 'glpiinject'),
                     'page' => $import_url,
                 ],
                 'models' => [

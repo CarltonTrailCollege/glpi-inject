@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.2] - 2026-10-19
+
+### Fixed
+
+- Avoid calling the uninitialized generic GLPI Asset type label while building dynamic custom-asset mapping choices.
+
 ## [0.1.0-alpha.1] - 2026-10-19
 
 First alpha release of GLPI Inject.
