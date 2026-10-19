@@ -147,12 +147,9 @@ final class AssetTargetProvider
             }
         }
 
-        $definitions = AssetDefinitionManager::getInstance()->getDefinitions();
+        $definitions = AssetDefinitionManager::getInstance()->getDefinitions(true);
 
         foreach ($definitions as $definition) {
-            if (empty($definition->fields['is_active'])) {
-                continue;
-            }
             $itemtype = $definition->getAssetClassName();
 
             if (!is_a($itemtype, CommonDBTM::class, true)) {

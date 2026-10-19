@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4] - 2026-10-19
+
+### Fixed
+
+- Discover active custom asset definitions alongside the original plugin's broader built-in import types.
+- Register a dedicated GLPI Inject Tools menu with distinct import and model entries.
+
 ## [0.1.0-alpha.3] - 2026-10-19
 
 ### Fixed

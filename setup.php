@@ -5,8 +5,9 @@ require_once __DIR__ . '/src/CsvImportService.php';
 require_once __DIR__ . '/src/ImportModel.php';
 require_once __DIR__ . '/src/ImportRun.php';
 require_once __DIR__ . '/src/ImportRunLog.php';
+require_once __DIR__ . '/src/Menu.php';
 
-define('PLUGIN_GLPIINJECT_VERSION', '0.1.0-alpha.3');
+define('PLUGIN_GLPIINJECT_VERSION', '0.1.0-alpha.4');
 define('PLUGIN_GLPIINJECT_MIN_GLPI', '11.0.8');
 define('PLUGIN_GLPIINJECT_MAX_GLPI', '11.99.99');
 if (!defined('PLUGIN_GLPIINJECT_UPLOAD_DIR')) {
@@ -22,7 +23,7 @@ function plugin_init_glpiinject(): void
     Plugin::registerClass(GlpiPlugin\Glpiinject\ImportRunLog::class);
     $PLUGIN_HOOKS['csrf_compliant']['glpiinject'] = true;
     $PLUGIN_HOOKS['config_page']['glpiinject'] = 'front/index.php';
-    $PLUGIN_HOOKS['menu_toadd']['glpiinject'] = ['tools' => GlpiPlugin\Glpiinject\ImportModel::class];
+    $PLUGIN_HOOKS['menu_toadd']['glpiinject'] = ['tools' => GlpiPlugin\Glpiinject\Menu::class];
 }
 
 function plugin_version_glpiinject(): array

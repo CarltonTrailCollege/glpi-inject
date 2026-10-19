@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 namespace {
+    class CommonGLPI {}
+
     class CommonDBTM
     {
         public array $fields = [];
 
-        public function getTable(): string
+        public static function getTable($classname = null): string
         {
             return 'glpi_assets_assets';
         }
@@ -48,14 +50,28 @@ namespace Glpi\Asset {
             return new self();
         }
 
-        public function getDefinitions(): array
+        public function getDefinitions(bool $only_active = false): array
         {
-            return self::$definitions;
+            if (!$only_active) {
+                return self::$definitions;
+            }
+
+            return array_filter(self::$definitions, static fn ($definition) => !empty($definition->fields['is_active']));
         }
     }
 }
 
 namespace {
+    function __($message, $domain = null): string
+    {
+        return $message;
+    }
+
+    function _n($singular, $plural, $count): string
+    {
+        return $plural;
+    }
+
     final class Search
     {
         public static function getOptions(string $itemtype): array
@@ -107,9 +123,15 @@ namespace {
     }
 
     require_once dirname(__DIR__) . '/src/AssetTargetProvider.php';
+    require_once dirname(__DIR__) . '/src/ImportModel.php';
+    require_once dirname(__DIR__) . '/src/Menu.php';
 
+    $CFG_GLPI['root_doc'] = '';
     $CFG_GLPI['asset_types'] = [Computer::class];
-    \Glpi\Asset\AssetDefinitionManager::$definitions = [new TestAssetDefinition()];
+    $inactive_definition = new TestAssetDefinition();
+    $inactive_definition->fields['name'] = 'Inactive Equipment';
+    $inactive_definition->fields['is_active'] = 0;
+    \Glpi\Asset\AssetDefinitionManager::$definitions = [new TestAssetDefinition(), $inactive_definition];
     $targets = (new \GlpiPlugin\Glpiinject\AssetTargetProvider())->getTargets();
     $target = $targets[TestCustomAsset::class];
 
@@ -118,5 +140,10 @@ namespace {
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
 
-    echo "Custom asset discovery handles generic Asset type labels safely.\n";
+    $menu = \GlpiPlugin\Glpiinject\Menu::getMenuContent();
+    assert($menu['title'] === 'GLPI Inject');
+    assert($menu['options']['client']['title'] === 'Import CSV');
+    assert($menu['options']['models']['title'] === 'Import models');
+
+    echo "Custom asset discovery and GLPI Inject menu registration checks passed.\n";
 }
