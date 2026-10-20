@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6] - 2026-10-20
+
+### Fixed
+
+- Remove blank mapping fields and distinguish duplicate labels by their source itemtype.
+- Include active custom assets in the import target list even when the model-management profile lacks the asset-specific create right.
+
 ## [0.1.0-alpha.5] - 2026-10-19
 
 ### Fixed

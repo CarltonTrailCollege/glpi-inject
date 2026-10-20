@@ -16,7 +16,7 @@ namespace {
 
         public function getEmpty(): bool
         {
-            $this->fields = ['id' => 0, 'custom_serial' => ''];
+            $this->fields = ['id' => 0, 'custom_serial' => '', 'assets_id' => 0];
             return true;
         }
 
@@ -76,18 +76,50 @@ namespace {
     {
         public static function getOptions(string $itemtype): array
         {
-            return [[
-                'id' => 1001,
-                'table' => 'glpi_assets_assets',
-                'field' => 'custom_serial',
-                'name' => 'Serial number',
-                'datatype' => 'string',
-            ]];
+            $options = [[
+                    'id' => 1001,
+                    'table' => 'glpi_assets_assets',
+                    'field' => 'custom_serial',
+                    'name' => 'Serial number',
+                    'datatype' => 'string',
+                ], [
+                    'id' => 1002,
+                    'table' => 'glpi_assets_assets',
+                    'field' => 'custom_blank',
+                    'name' => '   ',
+                    'datatype' => 'string',
+                ]];
+
+            if ($itemtype === TestCustomAsset::class) {
+                $options[] = [
+                    'id' => 1003,
+                    'table' => 'glpi_computers',
+                    'field' => 'name',
+                    'linkfield' => 'assets_id',
+                    'name' => 'General',
+                    'datatype' => 'dropdown',
+                ];
+                $options[] = [
+                    'id' => 1004,
+                    'table' => 'glpi_monitors',
+                    'field' => 'name',
+                    'linkfield' => 'assets_id',
+                    'name' => 'General',
+                    'datatype' => 'dropdown',
+                ];
+            }
+
+            return $options;
         }
     }
 
     final class TestCustomAsset extends CommonDBTM
     {
+        public function canCreate(): bool
+        {
+            return false;
+        }
+
         public static function getTypeName(int $count = 0): string
         {
             return 'Custom Equipment';
@@ -99,6 +131,14 @@ namespace {
         public static function getTypeName(int $count = 0): string
         {
             return 'Computer';
+        }
+    }
+
+    final class Monitor extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Monitor';
         }
     }
 
@@ -114,6 +154,13 @@ namespace {
 
     function getItemTypeForTable(string $table): string
     {
+        if ($table === 'glpi_computers') {
+            return Computer::class;
+        }
+        if ($table === 'glpi_monitors') {
+            return Monitor::class;
+        }
+
         return \Glpi\Asset\Asset::class;
     }
 
@@ -139,6 +186,10 @@ namespace {
     assert($target['label'] === 'Vehicle');
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
+    assert($target['mapping_options'][0]['label'] === 'Vehicle -> Serial number');
+    assert(count($target['mapping_options']) === 3);
+    assert($target['mapping_options'][1]['label'] === 'Computer -> General');
+    assert($target['mapping_options'][2]['label'] === 'Monitor -> General');
 
     $menu = \GlpiPlugin\Glpiinject\Menu::getMenuContent();
     assert($menu['title'] === 'GLPI Inject');

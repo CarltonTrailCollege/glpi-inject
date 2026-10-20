@@ -157,10 +157,7 @@ final class AssetTargetProvider
             }
 
             try {
-                $item = new $itemtype();
-                if (!$item->canCreate()) {
-                    continue;
-                }
+                new $itemtype();
             } catch (\Throwable) {
                 continue;
             }
@@ -185,6 +182,7 @@ final class AssetTargetProvider
         foreach (Search::getOptions($itemtype) as $option) {
             if (
                 !isset($option['field'], $option['name'])
+                || trim((string) $option['name']) === ''
                 || $option['field'] === 'id'
                 || ($option['table'] ?? null) !== $item->getTable()
             ) {
@@ -211,7 +209,10 @@ final class AssetTargetProvider
         $options = [];
 
         foreach (Search::getOptions($primary_itemtype) as $option) {
-            if (!isset($option['table'], $option['field'], $option['name'])) {
+            if (
+                !isset($option['table'], $option['field'], $option['name'])
+                || trim((string) $option['name']) === ''
+            ) {
                 continue;
             }
 
@@ -222,6 +223,9 @@ final class AssetTargetProvider
             }
 
             $is_primary_field = $table === $primary_table;
+            $source_label = $is_primary_field
+                ? $primary_label
+                : $this->getSafeTypeName($destination_itemtype, $destination_itemtype);
             $linkfield = (string) ($option['linkfield'] ?? (
                 $is_primary_field
                     ? $option['field']
@@ -238,7 +242,7 @@ final class AssetTargetProvider
                     : $this->getSafeTypeName($destination_itemtype, (string) $option['name']),
                 'field' => (string) $option['field'],
                 'linkfield' => $linkfield,
-                'label' => (string) $option['name'],
+                'label' => sprintf('%s -> %s', $source_label, trim((string) $option['name'])),
                 'table' => $table,
                 'is_custom' => str_starts_with((string) $option['field'], 'custom_'),
                 'is_relation' => !$is_primary_field,
