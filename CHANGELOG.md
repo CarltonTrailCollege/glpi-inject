@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.9] - 2026-10-20
+
+### Fixed
+
+- Exclude core import targets whose displayed type name is exactly “General,” while retaining specifically named targets.
+
 ## [0.1.0-alpha.8] - 2026-10-20
 
 ### Fixed

@@ -136,6 +136,9 @@ final class AssetTargetProvider
                     continue;
                 }
                 $label = $this->getSafeTypeName($itemtype, $this->fallbackTypeName($itemtype));
+                if (strcasecmp(trim($label), 'General') === 0) {
+                    continue;
+                }
                 $targets[$itemtype] = [
                     'label' => $label,
                     'itemtype' => $itemtype,
