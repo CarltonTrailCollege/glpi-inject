@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.30] - 2026-10-20
+
+### Changed
+
+- Replace per-row model actions with a shared Create, Edit, Use model, and Delete toolbar above available models.
+- Select one model at a time using radio buttons; selection-dependent actions show an error when no model is selected, and deletion still requires confirmation.
+
 ## [0.1.0-alpha.29] - 2026-10-20
 
 ### Added

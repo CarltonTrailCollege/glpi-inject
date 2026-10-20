@@ -8,26 +8,39 @@
 <div class="row g-3">
     <section class="col-12 col-xl-7">
         <div class="border rounded p-3">
-            <h2 class="h4">{{ __('Available models', 'glpiinject') }}</h2>
+            <form method="post" id="model-list-actions" data-edit-url="{{ root_doc }}/plugins/glpiinject/front/models.php" data-use-url="{{ root_doc }}/plugins/glpiinject/front/index.php">
+            <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="delete">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h4 mb-0">{{ __('Available models', 'glpiinject') }}</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-sm btn-primary" href="{{ root_doc }}/plugins/glpiinject/front/models.php"><i class="ti ti-plus" aria-hidden="true"></i> {{ __('Create') }}</a>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-model-action="edit"><i class="ti ti-edit" aria-hidden="true"></i> {{ __('Edit') }}</button>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-model-action="use"><i class="ti ti-player-play" aria-hidden="true"></i> {{ __('Use model', 'glpiinject') }}</button>
+                    <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{{ __('Delete') }}" title="{{ __('Delete') }}"><i class="ti ti-trash" aria-hidden="true"></i></button>
+                </div>
+            </div>
+            <div class="alert alert-danger d-none" id="model-selection-error" role="alert">{{ __('Select a model first.', 'glpiinject') }}</div>
             {% if models is empty %}
                 <div class="alert alert-info mb-0">{{ __('No model currently available.', 'glpiinject') }}</div>
             {% else %}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th>{{ __('Name') }}</th><th>{{ __('Asset type', 'glpiinject') }}</th><th>{{ __('CSV', 'glpiinject') }}</th><th></th></tr></thead>
+                        <thead><tr><th style="width: 2.5rem;"><span class="visually-hidden">{{ __('Select') }}</span></th><th>{{ __('Name') }}</th><th>{{ __('Asset type', 'glpiinject') }}</th><th>{{ __('CSV', 'glpiinject') }}</th></tr></thead>
                         <tbody>
                             {% for model in models %}
                                 <tr>
-                                    <th scope="row">{{ model.name }}</th>
+                                    <td><input class="form-check-input" type="radio" name="id" value="{{ model.id }}" id="available-model-{{ model.id }}" {{ edit_model and edit_model.id == model.id ? 'checked' : '' }} aria-label="{{ __('Select') }} {{ model.name }}"></td>
+                                    <th scope="row"><label class="mb-0" for="available-model-{{ model.id }}">{{ model.name }}</label></th>
                                     <td>{{ targets[model.itemtype].label ?? model.itemtype }}</td>
                                     <td>{% if model.csv_file %}<span class="badge bg-success text-dark fw-semibold px-3 py-2">{{ __('Loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Not loaded', 'glpiinject') }}</span>{% endif %}</td>
-                                    <td class="text-end"><div class="d-inline-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="?edit={{ model.id }}">{{ __('Edit') }}</a><a class="btn btn-sm btn-outline-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php?id={{ model.id }}">{{ __('Use model', 'glpiinject') }}</a><form method="post" onsubmit="return confirm('{{ __('Delete this model?', 'glpiinject')|e('js') }}');"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ model.id }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{{ __('Delete') }}"><i class="ti ti-trash"></i></button></form></div></td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             {% endif %}
+            </form>
         </div>
     </section>
 
@@ -81,6 +94,30 @@
 </section>
 
 <script>
+const modelActions = document.getElementById('model-list-actions');
+const selectionError = document.getElementById('model-selection-error');
+const selectedModel = () => {
+    const selected = modelActions.querySelector('input[name="id"]:checked');
+    selectionError.classList.toggle('d-none', selected !== null);
+    return selected;
+};
+modelActions.addEventListener('change', () => selectionError.classList.add('d-none'));
+modelActions.querySelectorAll('[data-model-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const selected = selectedModel();
+        if (!selected) return;
+        const editing = button.dataset.modelAction === 'edit';
+        const targetUrl = new URL(editing ? modelActions.dataset.editUrl : modelActions.dataset.useUrl, window.location.href);
+        targetUrl.searchParams.set(editing ? 'edit' : 'id', selected.value);
+        window.location.assign(targetUrl.href);
+    });
+});
+modelActions.addEventListener('submit', (event) => {
+    if (!selectedModel() || !window.confirm('{{ __('Delete this model?', 'glpiinject')|e('js') }}')) {
+        event.preventDefault();
+    }
+});
+
 document.querySelectorAll('[data-model-tab]').forEach((tab) => {
     tab.addEventListener('click', () => {
         document.querySelectorAll('[data-model-tab]').forEach((button) => button.classList.toggle('active', button === tab));
