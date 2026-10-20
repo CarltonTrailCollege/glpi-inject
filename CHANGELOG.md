@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.33] - 2026-10-20
+
+### Changed
+
+- Load a model on selection and move Continue beside Load this file, linking to column mapping without resubmitting the upload.
+- Show CSV load success below the upload buttons and default new model delimiters to comma while preserving saved settings.
+
+### Fixed
+
+- Share Automatic encoding detection between preview and batch imports, detect UTF-16 before CSV parsing, and check the full CSV rather than assuming UTF-8 from its first 64 KB.
+- Add encoding regressions for BOM and BOM-less UTF-8/UTF-16, batch cursor continuation, Windows-1252 punctuation, and late non-ASCII values.
+
 ## [0.1.0-alpha.32] - 2026-10-20
 
 ### Changed

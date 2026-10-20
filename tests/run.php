@@ -249,6 +249,42 @@ namespace {
     assert($automatic_encoding_preview['records'][0]['values'][0] === "Caf\xC3\xA9 laptop");
     unlink($automatic_encoding_path);
 
+    $encoding_path = __DIR__ . '/fixtures/glpiinject/encoding-cases.csv';
+    $encoding_model = $model;
+    $encoding_model['csv_file'] = 'encoding-cases.csv';
+    $encoding_model['has_header'] = 1;
+    $encoding_model['file_encoding'] = 'Automatic';
+    $utf8_csv = "Name,Inventory code,Comment\nCaf\xC3\xA9 laptop,ENC-1,First\nSecond laptop,ENC-2,Second\n";
+    foreach (['UTF-8', 'UTF-16LE', 'UTF-16BE'] as $source_encoding) {
+        $bom = match ($source_encoding) {
+            'UTF-16LE' => "\xFF\xFE",
+            'UTF-16BE' => "\xFE\xFF",
+            default => "\xEF\xBB\xBF",
+        };
+        foreach (['', $bom] as $prefix) {
+            file_put_contents($encoding_path, $prefix . iconv('UTF-8', $source_encoding, $utf8_csv));
+            $encoding_preview = $service->preview($encoding_model, $target);
+            assert($encoding_preview['headers'][0] === 'Name');
+            assert($encoding_preview['records'][0]['values'][0] === "Caf\xC3\xA9 laptop");
+            $encoding_first = $service->readBatch($encoding_model, 0, 0, 1);
+            assert($encoding_first['rows'][0][1][0] === "Caf\xC3\xA9 laptop");
+            $encoding_second = $service->readBatch($encoding_model, $encoding_first['byte_offset'], $encoding_first['physical_line'], 1);
+            assert($encoding_second['rows'][0][1][0] === 'Second laptop');
+            $encoding_end = $service->readBatch($encoding_model, $encoding_second['byte_offset'], $encoding_second['physical_line'], 1);
+            assert($encoding_end['done'] === true);
+        }
+    }
+    file_put_contents($encoding_path, "Name,Inventory code,Comment\n" . str_repeat('A', 70000) . ",ENC-1,First\nCaf\xE9 laptop,ENC-2,Second\n");
+    $legacy_first = $service->readBatch($encoding_model, 0, 0, 1);
+    $legacy_second = $service->readBatch($encoding_model, $legacy_first['byte_offset'], $legacy_first['physical_line'], 1);
+    assert($legacy_second['rows'][0][1][0] === "Caf\xC3\xA9 laptop");
+    file_put_contents($encoding_path, "Name,Inventory code,Comment\nCaf\xE9,ENC-1,\x93Quoted\x94\n");
+    $legacy_preview = $service->preview($encoding_model, $target);
+    $legacy_batch = $service->readBatch($encoding_model, 0, 0, 10);
+    assert($legacy_preview['records'][0]['values'][0] === "Caf\xC3\xA9");
+    assert($legacy_batch['rows'][0][1][2] === "\xE2\x80\x9CQuoted\xE2\x80\x9D");
+    unlink($encoding_path);
+
     $cursor_path = __DIR__ . '/fixtures/glpiinject/cursor.csv';
     file_put_contents($cursor_path, "Name,Code\nFirst,1\nSecond,2\n");
     $cursor_model = $model;

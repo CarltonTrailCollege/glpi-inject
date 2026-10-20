@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException(__('Only .csv files are accepted.', 'glpiinject'));
             }
             $delimiter = (string) ($_POST['delimiter'] ?? $model['delimiter']);
-            $encoding = (string) ($_POST['file_encoding'] ?? 'UTF-8');
+            $encoding = (string) ($_POST['file_encoding'] ?? 'Automatic');
             if (!in_array($delimiter, [',', ';', "\t", '|'], true)) {
                 throw new RuntimeException(__('Choose a supported CSV delimiter.', 'glpiinject'));
             }

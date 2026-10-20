@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($name === '' || ($model_id === 0 && $provider->getTarget($itemtype) === null)) {
             throw new RuntimeException(__('Enter a model name and choose an available asset type.', 'glpiinject'));
         }
-        $delimiter = (string) ($_POST['delimiter'] ?? ';');
+        $delimiter = (string) ($_POST['delimiter'] ?? ',');
         $date_format = (string) ($_POST['date_format'] ?? 'yyyy-mm-dd');
         $float_format = (string) ($_POST['float_format'] ?? '1,234.56');
         if (!in_array($delimiter, [',', ';', "\t", '|'], true)) {

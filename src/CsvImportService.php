@@ -95,6 +95,7 @@ final class CsvImportService
 
         try {
             $encoding = $this->detectEncoding($handle, (string) ($model['file_encoding'] ?? 'Automatic'));
+            $handle = $this->prepareCsvHandle($handle, $encoding);
             if ($byte_offset === 0) {
                 if ((int) $model['has_header'] === 1) {
                     fgetcsv($handle, null, $model['delimiter'], '"', '\\');
@@ -124,16 +125,7 @@ final class CsvImportService
                 }
                 $byte_offset = $next_offset;
 
-                $row = array_map(function ($value) use ($encoding) {
-                    if ($value === null || $encoding === 'UTF-8') {
-                        return $value;
-                    }
-                    $converted = iconv($encoding, 'UTF-8', (string) $value);
-                    if ($converted === false) {
-                        throw new RuntimeException(__('A CSV value could not be converted to UTF-8.', 'glpiinject'));
-                    }
-                    return $converted;
-                }, $row);
+                $row = $this->convertCsvRow($row, $encoding);
 
                 if ($row === [null] || count(array_filter($row, static fn($value) => trim((string) $value) !== '')) === 0) {
                     continue;
@@ -538,40 +530,19 @@ final class CsvImportService
         }
 
         $path = PLUGIN_GLPIINJECT_UPLOAD_DIR . '/' . $filename;
-        $contents = file_get_contents($path);
-        if ($contents === false) {
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
             throw new RuntimeException(__('The CSV file could not be opened.', 'glpiinject'));
         }
-        $encoding = (string) ($model['file_encoding'] ?? 'UTF-8');
-        if ($encoding === 'Automatic') {
-            if (str_starts_with($contents, "\xEF\xBB\xBF") || preg_match('//u', $contents) === 1) {
-                $encoding = 'UTF-8';
-            } else {
-                $encoding = 'Windows-1252';
-            }
-        }
-
-        if ($encoding !== 'UTF-8') {
-            $contents = iconv($encoding, 'UTF-8', $contents);
-            if ($contents === false) {
-                throw new RuntimeException(__('The selected file encoding could not be converted to UTF-8.', 'glpiinject'));
-            }
-        }
-
-        $handle = fopen('php://temp', 'w+b');
-        if ($handle === false || fwrite($handle, $contents) === false) {
-            if (is_resource($handle)) {
-                fclose($handle);
-            }
-            throw new RuntimeException(__('The CSV contents could not be prepared for reading.', 'glpiinject'));
-        }
-        rewind($handle);
 
         try {
+            $encoding = $this->detectEncoding($handle, (string) ($model['file_encoding'] ?? 'Automatic'));
+            $handle = $this->prepareCsvHandle($handle, $encoding);
             $headers = [];
             $line = 0;
             if ((int) $model['has_header'] === 1) {
                 $headers = fgetcsv($handle, null, $model['delimiter'], '"', '\\') ?: [];
+                $headers = $this->convertCsvRow($headers, $encoding);
                 $line++;
                 if (isset($headers[0])) {
                     $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $headers[0]);
@@ -580,6 +551,7 @@ final class CsvImportService
 
             while (($row = fgetcsv($handle, null, $model['delimiter'], '"', '\\')) !== false) {
                 $line++;
+                $row = $this->convertCsvRow($row, $encoding);
                 if ($row === [null] || count(array_filter($row, static fn ($value) => trim((string) $value) !== '')) === 0) {
                     continue;
                 }
@@ -597,19 +569,81 @@ final class CsvImportService
             return $requested;
         }
 
-        $sample = fread($handle, 65536);
+        $sample = stream_get_contents($handle);
         if ($sample === false) {
             throw new RuntimeException(__('The CSV file could not be read.', 'glpiinject'));
         }
         rewind($handle);
+        if (str_starts_with($sample, "\xFF\xFE")) {
+            return 'UTF-16LE';
+        }
+        if (str_starts_with($sample, "\xFE\xFF")) {
+            return 'UTF-16BE';
+        }
+        if (str_contains($sample, "\0")) {
+            $probe = substr($sample, 0, 4096);
+            $even_nulls = 0;
+            $odd_nulls = 0;
+            for ($position = 0; $position < strlen($probe); $position++) {
+                if ($probe[$position] === "\0") {
+                    if ($position % 2 === 0) {
+                        $even_nulls++;
+                    } else {
+                        $odd_nulls++;
+                    }
+                }
+            }
+            if ($odd_nulls > strlen($probe) / 8 && $odd_nulls > $even_nulls * 2) {
+                return 'UTF-16LE';
+            }
+            if ($even_nulls > strlen($probe) / 8 && $even_nulls > $odd_nulls * 2) {
+                return 'UTF-16BE';
+            }
+        }
         if (str_starts_with($sample, "\xEF\xBB\xBF")) {
             return 'UTF-8';
         }
-        for ($trim = 0; $trim <= 4 && strlen($sample) >= $trim; $trim++) {
-            if (preg_match('//u', $trim === 0 ? $sample : substr($sample, 0, -$trim)) === 1) {
-                return 'UTF-8';
-            }
+        if (preg_match('//u', $sample) === 1) {
+            return 'UTF-8';
         }
         return 'Windows-1252';
+    }
+
+    private function prepareCsvHandle($handle, string &$encoding)
+    {
+        if (!in_array($encoding, ['UTF-16LE', 'UTF-16BE'], true)) {
+            return $handle;
+        }
+        $contents = stream_get_contents($handle);
+        $converted = $contents === false ? false : iconv($encoding, 'UTF-8', $contents);
+        if ($converted === false) {
+            throw new RuntimeException(__('The selected file encoding could not be converted to UTF-8.', 'glpiinject'));
+        }
+        $converted = preg_replace('/^\xEF\xBB\xBF/', '', $converted);
+        $prepared = fopen('php://temp', 'w+b');
+        if ($prepared === false || fwrite($prepared, $converted) !== strlen($converted)) {
+            if (is_resource($prepared)) {
+                fclose($prepared);
+            }
+            throw new RuntimeException(__('The CSV contents could not be prepared for reading.', 'glpiinject'));
+        }
+        rewind($prepared);
+        fclose($handle);
+        $encoding = 'UTF-8';
+        return $prepared;
+    }
+
+    private function convertCsvRow(array $row, string $encoding): array
+    {
+        return array_map(static function ($value) use ($encoding) {
+            if ($value === null || $encoding === 'UTF-8') {
+                return $value;
+            }
+            $converted = iconv($encoding, 'UTF-8', (string) $value);
+            if ($converted === false) {
+                throw new RuntimeException(__('A CSV value could not be converted to UTF-8.', 'glpiinject'));
+            }
+            return $converted;
+        }, $row);
     }
 }

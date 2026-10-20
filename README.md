@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-alpha.32` (alpha; expect incomplete parity and breaking changes).
+**Current release:** `0.1.0-alpha.33` (alpha; expect incomplete parity and breaking changes).
 
 ## Compatibility
 
@@ -22,6 +22,8 @@ This is an in-process GLPI plugin. It does not require an external REST API toke
 3. Map CSV columns to fields exposed by the selected GLPI itemtype.
 4. Preview and validate rows, including required fields and duplicate matching.
 5. Run the import and review per-row success and error results.
+
+Selecting a model loads its upload settings automatically. After loading a CSV, a success message appears below the upload buttons and Continue takes you to column mapping. New models default to comma-separated CSV. Automatic encoding detection supports UTF-8, UTF-16 little/big endian, and Windows-1252 fallback, using the same detection for preview and batch imports.
 
 Duplicate matching defaults to Name, including for older models with no saved matching field. Another standard matching field can be selected; the always-create mode is no longer available. Creation and update remain controlled by the model's respective behavior options.
 
@@ -55,4 +57,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.32`; the matching GitHub tag is `v0.1.0-alpha.32`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.33`; the matching GitHub tag is `v0.1.0-alpha.33`.

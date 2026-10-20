@@ -24,8 +24,8 @@
                 <div class="alert alert-info mb-0">{{ __('No model currently available.', 'glpiinject') }} <a href="{{ root_doc }}/plugins/glpiinject/front/models.php">{{ __('Create an import model', 'glpiinject') }}</a></div>
             {% else %}
                 <form method="get" class="row g-2 align-items-end">
-                    <div class="col-12 col-lg-8"><label class="form-label" for="model-select">{{ __('Model', 'glpiinject') }}</label><select class="form-select" id="model-select" name="id" required><option value="">{{ __('Select a model', 'glpiinject') }}</option>{% for entry in models %}<option value="{{ entry.id }}" {{ model and model.id == entry.id ? 'selected' : '' }}>{{ entry.name }}</option>{% endfor %}</select></div>
-                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2"><button class="btn btn-primary" type="submit">{{ __('Continue', 'glpiinject') }}</button><button class="btn btn-outline-secondary" type="submit" id="edit-selected-model" data-edit-url="{{ root_doc }}/plugins/glpiinject/front/models.php"><i class="ti ti-edit" aria-hidden="true"></i> {{ __('Edit', 'glpiinject') }}</button></div>
+                    <div class="col-12 col-lg-8"><label class="form-label" for="model-select">{{ __('Model', 'glpiinject') }}</label><select class="form-select" id="model-select" name="id" required onchange="this.form.requestSubmit();"><option value="">{{ __('Select a model', 'glpiinject') }}</option>{% for entry in models %}<option value="{{ entry.id }}" {{ model and model.id == entry.id ? 'selected' : '' }}>{{ entry.name }}</option>{% endfor %}</select></div>
+                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2"><button class="btn btn-outline-secondary" type="submit" id="edit-selected-model" data-edit-url="{{ root_doc }}/plugins/glpiinject/front/models.php"><i class="ti ti-edit" aria-hidden="true"></i> {{ __('Edit', 'glpiinject') }}</button></div>
                 </form>
             {% endif %}
         </section>
@@ -45,8 +45,9 @@
                     <div class="col-12 col-md-4 col-lg-2"><label class="form-label" for="file-encoding">{{ __('File encoding', 'glpiinject') }}</label><select class="form-select" id="file-encoding" name="file_encoding"><option value="Automatic" {{ model.file_encoding == 'Automatic' ? 'selected' : '' }}>{{ __('Automatic detection', 'glpiinject') }}</option><option value="UTF-8" {{ model.file_encoding == 'UTF-8' ? 'selected' : '' }}>UTF-8</option><option value="ISO-8859-1" {{ model.file_encoding == 'ISO-8859-1' ? 'selected' : '' }}>ISO-8859-1</option><option value="Windows-1252" {{ model.file_encoding == 'Windows-1252' ? 'selected' : '' }}>Windows-1252</option></select></div>
                     <div class="col-12 col-md-4 col-lg-2"><label class="form-label" for="upload-delimiter">{{ __('File delimiter', 'glpiinject') }}</label><select class="form-select" id="upload-delimiter" name="delimiter"><option value=";" {{ model.delimiter == ';' ? 'selected' : '' }}>{{ __('Semicolon', 'glpiinject') }}</option><option value="," {{ model.delimiter == ',' ? 'selected' : '' }}>{{ __('Comma', 'glpiinject') }}</option><option value="|" {{ model.delimiter == '|' ? 'selected' : '' }}>{{ __('Pipe', 'glpiinject') }}</option><option value="&#9;" {{ model.delimiter == "\t" ? 'selected' : '' }}>{{ __('Tab', 'glpiinject') }}</option></select></div>
                     <div class="col-12 col-md-4 col-lg-2"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="has_header" value="1" {{ model.has_header ? 'checked' : '' }}><span class="form-check-label">{{ __('Header of the file', 'glpiinject') }}</span></label></div>
-                    <div class="col-12"><button class="btn btn-primary" type="submit">{{ __('Load this file', 'glpiinject') }}</button></div>
+                    <div class="col-12 d-flex flex-wrap gap-2"><button class="btn btn-primary" type="submit">{{ __('Load this file', 'glpiinject') }}</button>{% if preview and not error %}<a class="btn btn-outline-primary" href="#column-mapping">{{ __('Continue', 'glpiinject') }}</a>{% else %}<button class="btn btn-outline-primary" type="button" disabled>{{ __('Continue', 'glpiinject') }}</button>{% endif %}</div>
                 </form>
+                {% if preview and not error %}<div class="text-success fw-semibold mt-2" role="status"><i class="ti ti-check" aria-hidden="true"></i> {{ __('CSV file loaded successfully.', 'glpiinject') }}</div>{% endif %}
             </section>
 
             {% if selected_run and selected_run.status == 'running' %}
@@ -62,7 +63,7 @@
             {% endif %}
 
             {% if preview %}
-                <section class="border rounded p-3 mb-3">
+                <section class="border rounded p-3 mb-3" id="column-mapping" style="scroll-margin-top: 5rem;">
                     <h2 class="h4">{{ __('Column mapping', 'glpiinject') }}</h2>
                     <form method="post">
                         <input type="hidden" name="models_id" value="{{ model.id }}">
