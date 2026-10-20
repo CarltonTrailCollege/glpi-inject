@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.21] - 2026-10-20
+
+### Changed
+
+- Render import progress directly in the Launch response instead of redirecting to a separate run URL.
+
 ## [0.1.0-alpha.20] - 2026-10-20
 
 ### Fixed

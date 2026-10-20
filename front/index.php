@@ -17,6 +17,7 @@ $provider = new AssetTargetProvider();
 $service = new CsvImportService();
 $user_id = (int) Session::getLoginUserID();
 $model_id = (int) ($_POST['models_id'] ?? $_GET['id'] ?? 0);
+$run_id = (int) ($_GET['run'] ?? 0);
 $preview = null;
 $import_results = null;
 $selected_run = null;
@@ -156,14 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($run_id === false) {
                 throw new RuntimeException(__('Unable to start the import run.', 'glpiinject'));
             }
-            Html::redirect($CFG_GLPI['root_doc'] . '/plugins/glpiinject/front/index.php?id=' . $model_id . '&run=' . (int) $run_id);
+            $run_id = (int) $run_id;
         }
     } catch (Throwable $exception) {
         $error = $exception->getMessage();
     }
 }
 
-$run_id = (int) ($_GET['run'] ?? 0);
 if ($run_id > 0) {
     $run = new ImportRun();
     if ($run->getFromDB($run_id) && (int) $run->fields['users_id'] === $user_id && (int) $run->fields['models_id'] === $model_id) {
