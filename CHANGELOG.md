@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.36] - 2026-10-20
+
+### Changed
+
+- Open a model's editor when its radio button is selected, removing the redundant Edit toolbar button.
+- Keep Use model as the explicit action to open the import screen; disable selection actions without a selected model and show only Create when no models exist.
+
 ## [0.1.0-alpha.35] - 2026-10-20
 
 ### Fixed
