@@ -170,6 +170,20 @@ final class AssetTargetProvider
             ];
         }
 
+        $label_counts = [];
+        foreach ($targets as $target) {
+            $label_key = strtolower(trim($target['label']));
+            $label_counts[$label_key] = ($label_counts[$label_key] ?? 0) + 1;
+        }
+
+        foreach ($targets as $itemtype => &$target) {
+            $label_key = strtolower(trim($target['label']));
+            if (($label_counts[$label_key] ?? 0) > 1) {
+                $target['label'] = sprintf('%s (%s)', $target['label'], $this->fallbackTypeName($itemtype));
+            }
+        }
+        unset($target);
+
         uasort($targets, static fn (array $left, array $right): int => strnatcasecmp($left['label'], $right['label']));
         return $targets;
     }

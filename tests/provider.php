@@ -144,6 +144,22 @@ namespace {
         }
     }
 
+    final class GenericDeviceOne extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'General';
+        }
+    }
+
+    final class GenericDeviceTwo extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'General';
+        }
+    }
+
     final class TestAssetDefinition
     {
         public array $fields = ['label' => 'Vehicle', 'system_name' => 'Vehicle', 'is_active' => 1];
@@ -175,6 +191,7 @@ namespace {
 
     $CFG_GLPI['root_doc'] = '';
     $CFG_GLPI['asset_types'] = [Computer::class];
+    $CFG_GLPI['test_types'] = [GenericDeviceOne::class, GenericDeviceTwo::class];
     $inactive_definition = new TestAssetDefinition();
     $inactive_definition->fields['label'] = 'Inactive Equipment';
     $inactive_definition->fields['is_active'] = 0;
@@ -183,6 +200,8 @@ namespace {
     $target = $targets[TestCustomAsset::class];
 
     assert(isset($targets[Computer::class]));
+    assert($targets[GenericDeviceOne::class]['label'] === 'General (GenericDeviceOne)');
+    assert($targets[GenericDeviceTwo::class]['label'] === 'General (GenericDeviceTwo)');
     assert($target['label'] === 'Vehicle');
     assert(!isset($targets['InactiveEquipment']));
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');

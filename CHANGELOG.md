@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.8] - 2026-10-20
+
+### Fixed
+
+- Disambiguate duplicate import-target labels by appending their GLPI itemtype names.
+
 ## [0.1.0-alpha.7] - 2026-10-20
 
 ### Fixed
