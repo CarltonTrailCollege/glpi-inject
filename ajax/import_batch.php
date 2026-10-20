@@ -32,19 +32,10 @@ try {
     $action = (string) ($_POST['action'] ?? 'batch');
     if ($action === 'cancel') {
         if (($run->fields['status'] ?? null) === 'running') {
-            $cancel_total = (int) $run->fields['processed'];
-            $cancel_model_item = new ImportModel();
-            if (
-                $cancel_model_item->getFromDB((int) $run->fields['models_id'])
-                && (int) $cancel_model_item->fields['users_id'] === (int) $run->fields['users_id']
-            ) {
-                $cancel_model = $cancel_model_item->fields;
-                $cancel_total = max($cancel_total, (new CsvImportService())->countRows($cancel_model));
-            }
             $run->update([
                 'id' => $run_id,
                 'status' => 'cancelled',
-                'total' => $cancel_total,
+                'total' => (int) $run->fields['processed'],
             ]);
             $run->getFromDB($run_id);
         }

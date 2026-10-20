@@ -160,11 +160,16 @@ if (progress) {
     let total = Number(progress.dataset.total || 0);
     let cancelled = false;
     let activeBatch = null;
+    let pendingBatchTimer = null;
 
     cancelButton.addEventListener('click', async () => {
         if (cancelled) return;
         cancelled = true;
         cancelButton.disabled = true;
+        if (pendingBatchTimer !== null) {
+            window.clearTimeout(pendingBatchTimer);
+            pendingBatchTimer = null;
+        }
         status.textContent = '{{ __('Cancelling after the current batch...', 'glpiinject')|e('js') }}';
         const body = new URLSearchParams({
             action: 'cancel',
@@ -194,8 +199,8 @@ if (progress) {
             progressTrack.setAttribute('aria-valuenow', String(percent));
             progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
             status.textContent = '{{ __('Import cancelled after the current batch.', 'glpiinject')|e('js') }}';
-            if (activeBatch) await activeBatch;
-            window.location.reload();
+            error.classList.add('d-none');
+            progress.dataset.cancelled = 'true';
         } catch (exception) {
             cancelled = false;
             cancelButton.disabled = false;
@@ -232,9 +237,12 @@ if (progress) {
             }
             offset = result.offset;
             total = Number(result.total || 0);
+            if (cancelled) return;
             if (result.cancelled) {
                 cancelled = true;
-                window.location.reload();
+                cancelButton.disabled = true;
+                status.textContent = '{{ __('Import cancelled.', 'glpiinject')|e('js') }}';
+                progress.dataset.cancelled = 'true';
                 return;
             }
             const percent = result.done ? 100 : (result.total ? Math.min(100, Number(result.progress || 0)) : 30);
@@ -250,7 +258,8 @@ if (progress) {
                 window.location.reload();
                 return;
             }
-            window.setTimeout(() => {
+            pendingBatchTimer = window.setTimeout(() => {
+                pendingBatchTimer = null;
                 activeBatch = processBatch();
             }, 80);
         } catch (exception) {

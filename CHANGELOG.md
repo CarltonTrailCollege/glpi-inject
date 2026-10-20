@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.24] - 2026-10-20
+
+### Fixed
+
+- Cancel active imports without waiting for a full CSV scan or page reload, and prevent a late batch response from restarting progress.
+
 ## [0.1.0-alpha.23] - 2026-10-20
 
 ### Fixed
