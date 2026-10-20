@@ -89,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'entities_id' => (int) Session::getActiveEntity(),
                 'is_recursive' => isset($_POST['is_recursive']) ? 1 : 0,
                 'users_id' => $user_id,
+                'match_field' => 'name',
                 'mappings' => '{}',
             ]);
         }

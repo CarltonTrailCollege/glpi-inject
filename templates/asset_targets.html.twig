@@ -69,7 +69,7 @@
                         <input type="hidden" name="action" value="save_mapping">
                         <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-3 mb-3">
-                            <div class="col-12 col-md-4"><label class="form-label" for="match-field">{{ __('Update matching records by', 'glpiinject') }}</label><select class="form-select" id="match-field" name="match_field"><option value="">{{ __('Always create new records', 'glpiinject') }}</option>{% for field in targets[model.itemtype].fields %}{% if not field.is_custom %}<option value="{{ field.field }}" {{ model.match_field == field.field ? 'selected' : '' }}>{{ field.name }}</option>{% endif %}{% endfor %}</select></div>
+                            <div class="col-12 col-md-4"><label class="form-label" for="match-field">{{ __('Update matching records by', 'glpiinject') }}</label><select class="form-select" id="match-field" name="match_field" required>{% for field in targets[model.itemtype].fields %}{% if not field.is_custom %}<option value="{{ field.field }}" {{ (model.match_field|default('name', true)) == field.field ? 'selected' : '' }}>{{ field.name }}</option>{% endif %}{% endfor %}</select></div>
                         </div>
                         <div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead><tr><th>{{ __('Header of the file', 'glpiinject') }}</th><th>{{ __('Tables', 'glpiinject') }}</th><th>{{ _n('Field', 'Fields', 2) }}</th><th>{{ __('Link field', 'glpiinject') }}</th><th>{{ __('Mandatory', 'glpiinject') }}</th></tr></thead><tbody>
                             {% for header in preview.headers %}

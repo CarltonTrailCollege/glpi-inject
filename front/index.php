@@ -109,17 +109,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_mandatory' => isset($mapping_input['is_mandatory']),
                 ];
             }
-            $match_field = (string) ($_POST['match_field'] ?? '');
+            $match_field = trim((string) ($_POST['match_field'] ?? '')) ?: 'name';
             $matchable_fields = array_column(array_filter(
                 $target['fields'],
                 static fn (array $field) => !$field['is_custom']
             ), 'field');
-            if ($match_field !== '' && !in_array($match_field, $matchable_fields, true)) {
+            if (!in_array($match_field, $matchable_fields, true)) {
                 throw new RuntimeException(__('The duplicate matching field is not valid.', 'glpiinject'));
             }
             $updated = $model_item->update([
                 'id' => $model_id,
-                'match_field' => $match_field === '' ? null : $match_field,
+                'match_field' => $match_field,
                 'mappings' => json_encode($mappings, JSON_THROW_ON_ERROR),
             ]);
             if (!$updated) {

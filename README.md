@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-alpha.30` (alpha; expect incomplete parity and breaking changes).
+**Current release:** `0.1.0-alpha.32` (alpha; expect incomplete parity and breaking changes).
 
 ## Compatibility
 
@@ -22,6 +22,8 @@ This is an in-process GLPI plugin. It does not require an external REST API toke
 3. Map CSV columns to fields exposed by the selected GLPI itemtype.
 4. Preview and validate rows, including required fields and duplicate matching.
 5. Run the import and review per-row success and error results.
+
+Duplicate matching defaults to Name, including for older models with no saved matching field. Another standard matching field can be selected; the always-create mode is no longer available. Creation and update remain controlled by the model's respective behavior options.
 
 The current development slice follows the original plugin's model-picker-first import flow and separate model-management screen. It implements reusable model create/edit/delete with General/CSV/Advanced tabs, CSV upload (10 MB limit), encoding/delimiter/header selection, a four-part destination type/field/link-field/mandatory mapper, a 12-row preview, column-count and value validation, linked dropdown lookup, optional safe dropdown creation, date/number/boolean normalization, duplicate matching by a standard field, create/update imports, confirmation prompts, per-row results, failed-row CSV export, persistent run history, and ten-row AJAX batch progress with staged input rows. Standard GLPI assets and active custom asset definitions are discovered dynamically. Custom fields are passed to GLPI using their `custom_<system_name>` names, and GLPI item methods perform persistence.
 
@@ -53,4 +55,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.30`; the matching GitHub tag is `v0.1.0-alpha.30`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.32`; the matching GitHub tag is `v0.1.0-alpha.32`.

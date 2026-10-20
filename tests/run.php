@@ -532,5 +532,22 @@ namespace {
     assert($create_only['updated'] === 0);
     assert($create_only['failed'] === 1);
 
-    echo "CSV importer regressions passed, including date normalization, Location creation/reuse, read-only preview, entity exclusion, and asset create/update flags.\n";
+    foreach (['missing', 'null', 'empty'] as $match_setting) {
+        $default_match_model = $normalization_model;
+        $default_match_model['behavior_update'] = 1;
+        unset($default_match_model['match_field']);
+        if ($match_setting !== 'missing') {
+            $default_match_model['match_field'] = $match_setting === 'null' ? null : '';
+        }
+        $record_count = count(TestAsset::$records);
+        $default_match = $service->processStagedBatch($default_match_model, $normalization_target, [
+            ['line' => 18, 'row' => ['Normalized 0', 'Temporary Location', '2026-05-08']],
+        ]);
+        assert($default_match['updated'] === 1);
+        assert($default_match['created'] === 0);
+        assert($default_match['failed'] === 0);
+        assert(count(TestAsset::$records) === $record_count);
+    }
+
+    echo "CSV importer regressions passed, including default Name matching, date normalization, Location creation/reuse, read-only preview, entity exclusion, and asset create/update flags.\n";
 }

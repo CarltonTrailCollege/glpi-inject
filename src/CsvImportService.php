@@ -255,7 +255,7 @@ final class CsvImportService
                 $values['entities_id'] = (int) $model['entities_id'];
 
                 $existing = null;
-                $match_field = $model['match_field'] ?? '';
+                $match_field = trim((string) ($model['match_field'] ?? '')) ?: 'name';
                 if ($match_field !== '' && isset($values[$match_field]) && $values[$match_field] !== '') {
                     $candidate = new $itemtype();
                     if ($candidate->getFromDBByCrit([

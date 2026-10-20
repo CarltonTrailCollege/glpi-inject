@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.32] - 2026-10-20
+
+### Changed
+
+- Default duplicate matching to Name for new models and existing models with an empty matching field.
+- Remove the Always create new records option while preserving explicit alternative matching fields and asset creation/update settings.
+
 ## [0.1.0-alpha.30] - 2026-10-20
 
 ### Changed
