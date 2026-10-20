@@ -10,12 +10,13 @@ include('../../../inc/includes.php');
 
 header('Content-Type: application/json; charset=UTF-8');
 Html::header_nocache();
-Session::checkRight('config', UPDATE);
-Session::writeClose();
-
 global $DB;
 
 try {
+    Session::checkRight('config', UPDATE);
+    $current_user_id = (int) Session::getLoginUserID();
+    Session::writeClose();
+
     $run_id = (int) ($_POST['run_id'] ?? 0);
     $offset = max(0, (int) ($_POST['offset'] ?? 0));
     $batch_size = min(50, max(1, (int) ($_POST['batch_size'] ?? 10)));
@@ -23,7 +24,7 @@ try {
     $run = new ImportRun();
     if (
         !$run->getFromDB($run_id)
-        || (int) $run->fields['users_id'] !== (int) Session::getLoginUserID()
+        || (int) $run->fields['users_id'] !== $current_user_id
     ) {
         throw new RuntimeException(__('Import run not found or unavailable.', 'glpiinject'));
     }

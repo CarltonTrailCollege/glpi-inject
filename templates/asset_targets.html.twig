@@ -178,7 +178,14 @@ if (progress) {
                 body,
                 credentials: 'same-origin',
             });
-            const result = await response.json();
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (_) {
+                const preview = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+                throw new Error(`{{ __('Batch request returned non-JSON response.', 'glpiinject')|e('js') }} HTTP ${response.status}: ${preview || response.statusText}`);
+            }
             if (!response.ok) throw new Error(result.error || '{{ __('Unable to cancel the import.', 'glpiinject')|e('js') }}');
             offset = result.processed;
             const percent = total ? Math.min(100, Math.round((offset / total) * 100)) : 100;
@@ -212,7 +219,14 @@ if (progress) {
                 body,
                 credentials: 'same-origin',
             });
-            const result = await response.json();
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (_) {
+                const preview = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+                throw new Error(`{{ __('Batch request returned non-JSON response.', 'glpiinject')|e('js') }} HTTP ${response.status}: ${preview || response.statusText}`);
+            }
             if (!response.ok) {
                 throw new Error(result.error || '{{ __('The import batch failed.', 'glpiinject')|e('js') }}');
             }

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.23] - 2026-10-20
+
+### Fixed
+
+- Capture AJAX permission/session errors as JSON when the endpoint executes, and show HTTP status plus a response excerpt when GLPI returns HTML.
+
 ## [0.1.0-alpha.22] - 2026-10-20
 
 ### Fixed
