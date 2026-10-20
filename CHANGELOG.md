@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.17] - 2026-10-20
+
+### Fixed
+
+- Persist first-batch server exceptions in import run logs and display failed runs as failures instead of successful imports.
+- Verify the cursor-batched importer creates an asset when Name is the only mapped field.
+
 ## [0.1.0-alpha.16] - 2026-10-20
 
 ### Changed

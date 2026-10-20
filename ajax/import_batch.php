@@ -158,8 +158,22 @@ try {
     ], JSON_THROW_ON_ERROR);
 } catch (Throwable $exception) {
     if (isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {
+        try {
+            $error_log = new ImportRunLog();
+            $error_log->add([
+                'runs_id' => $run_id,
+                'line' => (int) $run->fields['processed'] + 1,
+                'status' => 'failed',
+                'message' => $exception->getMessage(),
+                'itemtype' => null,
+                'items_id' => 0,
+                'source_row' => '',
+            ]);
+        } catch (Throwable) {
+        }
         $run->update([
             'id' => $run_id,
+            'failed' => (int) $run->fields['failed'] + 1,
             'status' => 'failed',
         ]);
     }

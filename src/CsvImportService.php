@@ -356,7 +356,11 @@ final class CsvImportService
                     throw new RuntimeException(__('The mapped related item type is invalid.', 'glpiinject'));
                 }
                 $related_item = new $related_itemtype();
-                if (!$related_item->getFromDBByCrit([$mapping['field'] => $value])) {
+                $related_found = $related_item->getFromDBByCrit([$mapping['field'] => $value]);
+                if (!$related_found && $related_item instanceof CommonTreeDropdown && $mapping['field'] !== 'completename') {
+                    $related_found = $related_item->getFromDBByCrit(['completename' => $value]);
+                }
+                if (!$related_found) {
                     if (
                         (int) ($model['can_add_dropdown'] ?? 0) === 1
                         && $related_item instanceof CommonDropdown
@@ -469,13 +473,21 @@ final class CsvImportService
                 'dd-mm-yyyy' => 'd-m-Y',
                 'mm-dd-yyyy' => 'm-d-Y',
             ];
-            $input_format = $formats[$model['date_format'] ?? 'yyyy-mm-dd'] ?? 'Y-m-d';
-            if ($datatype === 'datetime') {
-                $input_format .= ' H:i:s';
+            $date_format = $formats[$model['date_format'] ?? 'yyyy-mm-dd'] ?? 'Y-m-d';
+            $normalized_value = preg_replace('/(?<=\d)\/(?=\d)/', '-', $value);
+            $input_formats = $datatype === 'datetime'
+                ? [$date_format . ' H:i:s', $date_format . ' H:i', $date_format]
+                : [$date_format . ' H:i:s', $date_format . ' H:i', $date_format];
+            $date = false;
+            foreach ($input_formats as $input_format) {
+                $candidate = \DateTimeImmutable::createFromFormat('!' . $input_format, $normalized_value);
+                $errors = \DateTimeImmutable::getLastErrors();
+                if ($candidate !== false && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))) {
+                    $date = $candidate;
+                    break;
+                }
             }
-            $date = \DateTimeImmutable::createFromFormat('!' . $input_format, $value);
-            $errors = \DateTimeImmutable::getLastErrors();
-            if ($date === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+            if ($date === false) {
                 throw new RuntimeException(sprintf(__('Invalid date value "%s".', 'glpiinject'), $value));
             }
 

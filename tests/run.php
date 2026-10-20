@@ -393,5 +393,27 @@ namespace {
     assert(TestAsset::$records[2]['custom_inventory_code'] === 'STR-002');
     unlink($stream_path);
 
-    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, staged batches, and cursor-streamed imports passed.\n";
+    $name_only_path = __DIR__ . '/fixtures/glpiinject/name-only-import.csv';
+    file_put_contents($name_only_path, "Asset name\nName only asset\n");
+    TestAsset::$records = [];
+    $name_only_model = $batch_model;
+    $name_only_model['csv_file'] = 'name-only-import.csv';
+    $name_only_model['mappings'] = [
+        0 => ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name'],
+    ];
+    $name_only_target = $target;
+    $name_only_target['mapping_options'] = [
+        ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name', 'label' => 'Name', 'datatype' => 'string', 'is_relation' => false],
+    ];
+    $name_only_cursor = $service->readBatch($name_only_model, 0, 0, 10);
+    $name_only_import = $service->processStagedBatch($name_only_model, $name_only_target, array_map(
+        static fn(array $row) => ['line' => $row[0], 'row' => $row[1]],
+        $name_only_cursor['rows']
+    ));
+    assert($name_only_import['created'] === 1);
+    assert($name_only_import['failed'] === 0);
+    assert(TestAsset::$records[1]['name'] === 'Name only asset');
+    unlink($name_only_path);
+
+    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, staged batches, cursor-streamed imports, and name-only import passed.\n";
 }
