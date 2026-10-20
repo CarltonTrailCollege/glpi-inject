@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.10] - 2026-10-20
+
+### Added
+
+- Map financial and administrative information fields on assets and create or update the attached Infocom child record during import.
+
 ## [0.1.0-alpha.9] - 2026-10-20
 
 ### Fixed

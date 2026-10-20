@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace {
     define('GLPI_PLUGIN_DOC_DIR', __DIR__ . '/fixtures');
     define('PLUGIN_GLPIINJECT_UPLOAD_DIR', GLPI_PLUGIN_DOC_DIR . '/glpiinject');
+    define('CREATE', 1);
+    define('UPDATE', 2);
 
     function __(string $message, string $domain = ''): string
     {
@@ -69,6 +71,63 @@ namespace {
             unset($input['id']);
             static::$records[$id] = array_merge(static::$records[$id], $input);
             $this->fields = ['id' => $id] + static::$records[$id];
+            return true;
+        }
+    }
+
+    final class Session
+    {
+        public static function haveRight(string $right, int $value): bool
+        {
+            return true;
+        }
+    }
+
+    final class Infocom extends CommonDBTM
+    {
+        public static array $records = [];
+        public static string $rightname = 'infocom';
+
+        public function getFromDBforDevice(string $itemtype, int $items_id): bool
+        {
+            foreach (self::$records as $id => $record) {
+                if ($record['itemtype'] === $itemtype && $record['items_id'] === $items_id) {
+                    $this->fields = ['id' => $id] + $record;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Financial and administrative information';
+        }
+
+        public function can(int $id, int $right, array $input = []): bool
+        {
+            return true;
+        }
+
+        public function canUpdateItem(): bool
+        {
+            return true;
+        }
+
+        public function add(array $input): int
+        {
+            $id = count(self::$records) + 1;
+            self::$records[$id] = $input;
+            $this->fields = ['id' => $id] + $input;
+            return $id;
+        }
+
+        public function update(array $input): bool
+        {
+            $id = (int) $input['id'];
+            unset($input['id']);
+            self::$records[$id] = array_merge(self::$records[$id], $input);
+            $this->fields = ['id' => $id] + self::$records[$id];
             return true;
         }
     }
@@ -211,6 +270,54 @@ namespace {
     assert(TestAsset::$records[4]['is_active'] === 1);
     unlink($formats_path);
 
+    $infocom_path = __DIR__ . '/fixtures/glpiinject/infocom.csv';
+    file_put_contents($infocom_path, "Laptop G,2026-01-15,1250.50\n");
+    $infocom_model = $model;
+    $infocom_model['csv_file'] = 'infocom.csv';
+    $infocom_model['has_header'] = 0;
+    $infocom_model['mappings'] = [
+        0 => ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name'],
+        1 => ['itemtype' => Infocom::class, 'field' => 'buy_date', 'linkfield' => '__infocom'],
+        2 => ['itemtype' => Infocom::class, 'field' => 'value', 'linkfield' => '__infocom'],
+    ];
+    $infocom_target = $target;
+    $infocom_target['mapping_options'][] = [
+        'itemtype' => Infocom::class,
+        'field' => 'buy_date',
+        'linkfield' => '__infocom',
+        'label' => 'Financial information -> Purchase date',
+        'datatype' => 'date',
+        'is_relation' => false,
+        'is_infocom' => true,
+    ];
+    $infocom_target['mapping_options'][] = [
+        'itemtype' => Infocom::class,
+        'field' => 'value',
+        'linkfield' => '__infocom',
+        'label' => 'Financial information -> Value',
+        'datatype' => 'decimal',
+        'is_relation' => false,
+        'is_infocom' => true,
+    ];
+    $infocom_import = $service->import($infocom_model, $infocom_target);
+    assert($infocom_import['created'] === 1);
+    assert($infocom_import['failed'] === 0);
+    assert(Infocom::$records[1]['itemtype'] === TestAsset::class);
+    assert(Infocom::$records[1]['items_id'] === 5);
+    assert(Infocom::$records[1]['buy_date'] === '2026-01-15');
+    assert((float) Infocom::$records[1]['value'] === 1250.50);
+
+    file_put_contents($infocom_path, "Laptop G,2026-02-15,1500.00\n");
+    $infocom_model['behavior_add'] = 0;
+    $infocom_model['behavior_update'] = 1;
+    $infocom_model['match_field'] = 'name';
+    $update_infocom = $service->import($infocom_model, $infocom_target);
+    assert($update_infocom['updated'] === 1);
+    assert($update_infocom['failed'] === 0);
+    assert(Infocom::$records[1]['buy_date'] === '2026-02-15');
+    assert((float) Infocom::$records[1]['value'] === 1500.00);
+    unlink($infocom_path);
+
     TestAsset::$records = [];
     $batch_model = $model;
     $batch_model['csv_file'] = 'sample.csv';
@@ -234,5 +341,5 @@ namespace {
     assert($staged_batch['rows'][1]['line'] === 3);
     assert(TestAsset::$records[2]['custom_inventory_code'] === 'CTC-002');
 
-    echo "CSV preview, custom-field mapping, linked-item resolution, mandatory checks, date/number/boolean conversion, create/update, and staged batch checks passed.\n";
+    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, and staged batch checks passed.\n";
 }

@@ -234,6 +234,23 @@ final class AssetTargetProvider
             }
 
             $table = (string) $option['table'];
+            if ($table === \Infocom::getTable()) {
+                $infocom_label = \Infocom::getTypeName(1);
+                $options[] = [
+                    'itemtype' => \Infocom::class,
+                    'itemtype_label' => $infocom_label,
+                    'field' => (string) $option['field'],
+                    'linkfield' => '__infocom',
+                    'label' => sprintf('%s -> %s', $infocom_label, trim((string) $option['name'])),
+                    'table' => $table,
+                    'is_custom' => false,
+                    'is_relation' => false,
+                    'is_infocom' => true,
+                    'datatype' => $option['datatype'] ?? 'string',
+                ];
+                continue;
+            }
+
             $destination_itemtype = $option['itemtype'] ?? getItemTypeForTable($table);
             if (!is_string($destination_itemtype) || !class_exists($destination_itemtype)) {
                 continue;

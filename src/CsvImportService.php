@@ -119,6 +119,16 @@ final class CsvImportService
         }
 
         foreach ($this->normalizeMappings($model['mappings'], $target) as $mapping) {
+            if (!empty($mapping['is_infocom'])) {
+                if ((int) ($model['behavior_add'] ?? 1) === 1 && !\Session::haveRight(\Infocom::$rightname, CREATE)) {
+                    throw new RuntimeException(sprintf(__('You do not have permission to create %s.', 'glpiinject'), \Infocom::getTypeName(1)));
+                }
+                if ((int) ($model['behavior_update'] ?? 0) === 1 && !\Session::haveRight(\Infocom::$rightname, UPDATE)) {
+                    throw new RuntimeException(sprintf(__('You do not have permission to update %s.', 'glpiinject'), \Infocom::getTypeName(1)));
+                }
+                continue;
+            }
+
             $must_write = !$mapping['is_relation'] || (int) ($model['can_add_dropdown'] ?? 0) === 1;
             if ($must_write) {
                 $mapped_itemtype = $mapping['is_relation'] ? $mapping['itemtype'] : $itemtype;
@@ -167,6 +177,8 @@ final class CsvImportService
                     ));
                 }
                 $values = $this->mapRow($row, $model['mappings'], $target, $model);
+                $infocom_values = $values['_infocom'] ?? [];
+                unset($values['_infocom']);
                 $item = new $itemtype();
                 $values['entities_id'] = (int) $model['entities_id'];
 
@@ -190,6 +202,7 @@ final class CsvImportService
                     if (!$existing->update($values)) {
                         throw new RuntimeException(__('GLPI rejected the item update.', 'glpiinject'));
                     }
+                    $this->saveInfocom($itemtype, $existing->getID(), $infocom_values);
                     $results['updated']++;
                     $outcome['status'] = 'updated';
                     $outcome['items_id'] = $existing->getID();
@@ -202,6 +215,7 @@ final class CsvImportService
                     if ($created_id === false) {
                         throw new RuntimeException(__('GLPI rejected the item creation.', 'glpiinject'));
                     }
+                    $this->saveInfocom($itemtype, (int) $created_id, $infocom_values);
                     $results['created']++;
                     $outcome['status'] = 'created';
                     $outcome['items_id'] = (int) $created_id;
@@ -259,6 +273,11 @@ final class CsvImportService
                 continue;
             }
 
+            if (!empty($mapping['is_infocom'])) {
+                $values['_infocom'][$mapping['field']] = $this->formatValue($value, $mapping, $model);
+                continue;
+            }
+
             if (!empty($mapping['is_relation'])) {
                 $related_itemtype = $mapping['itemtype'];
                 if (!is_a($related_itemtype, CommonDBTM::class, true)) {
@@ -298,6 +317,38 @@ final class CsvImportService
         }
 
         return $values;
+    }
+
+    private function saveInfocom(string $itemtype, int $items_id, array $values): void
+    {
+        if ($values === []) {
+            return;
+        }
+
+        $infocom = new \Infocom();
+        $exists = $infocom->getFromDBforDevice($itemtype, $items_id);
+        $input = $values + [
+            'itemtype' => $itemtype,
+            'items_id' => $items_id,
+        ];
+
+        if ($exists) {
+            if (!$infocom->canUpdateItem()) {
+                throw new RuntimeException(__('You do not have permission to update financial and administrative information.', 'glpiinject'));
+            }
+            $input['id'] = $infocom->getID();
+            if (!$infocom->update($input)) {
+                throw new RuntimeException(__('GLPI rejected the financial and administrative information update.', 'glpiinject'));
+            }
+            return;
+        }
+
+        if (!$infocom->can(-1, CREATE, $input)) {
+            throw new RuntimeException(__('You do not have permission to create financial and administrative information for this item.', 'glpiinject'));
+        }
+        if ($infocom->add($input) === false) {
+            throw new RuntimeException(__('GLPI rejected the financial and administrative information creation.', 'glpiinject'));
+        }
     }
 
     private function normalizeMappings(array $mappings, array $target): array

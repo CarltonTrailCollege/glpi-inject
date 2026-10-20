@@ -30,6 +30,19 @@ namespace {
             return 'Item';
         }
     }
+
+    final class Infocom
+    {
+        public static function getTable(): string
+        {
+            return 'glpi_infocoms';
+        }
+
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Financial and administrative information';
+        }
+    }
 }
 
 namespace Glpi\Asset {
@@ -91,6 +104,13 @@ namespace {
                 ]];
 
             if ($itemtype === TestCustomAsset::class) {
+                $options[] = [
+                    'id' => 1005,
+                    'table' => 'glpi_infocoms',
+                    'field' => 'buy_date',
+                    'name' => 'Date of purchase',
+                    'datatype' => 'date',
+                ];
                 $options[] = [
                     'id' => 1003,
                     'table' => 'glpi_computers',
@@ -216,9 +236,11 @@ namespace {
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
     assert($target['mapping_options'][0]['label'] === 'Vehicle -> Serial number');
-    assert(count($target['mapping_options']) === 3);
-    assert($target['mapping_options'][1]['label'] === 'Computer -> General');
-    assert($target['mapping_options'][2]['label'] === 'Monitor -> General');
+    assert(count($target['mapping_options']) === 4);
+    assert($target['mapping_options'][1]['itemtype'] === Infocom::class);
+    assert($target['mapping_options'][1]['label'] === 'Financial and administrative information -> Date of purchase');
+    assert($target['mapping_options'][2]['label'] === 'Computer -> General');
+    assert($target['mapping_options'][3]['label'] === 'Monitor -> General');
 
     $menu = \GlpiPlugin\Glpiinject\Menu::getMenuContent();
     assert($menu['title'] === 'GLPI Inject');
