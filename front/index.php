@@ -40,6 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $action = (string) ($_POST['action'] ?? '');
+        if ($action === '' && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $_POST === []) {
+            throw new RuntimeException(__('The upload request could not be read. Check the server post_max_size and upload_max_filesize limits.', 'glpiinject'));
+        }
         if ($model === null) {
             throw new RuntimeException(__('Select a model before continuing.', 'glpiinject'));
         }
@@ -51,7 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'upload_csv') {
             $upload = $_FILES['csv_file'] ?? null;
             if (!is_array($upload) || ($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-                throw new RuntimeException(__('Choose a CSV file to upload.', 'glpiinject'));
+                $upload_error = (int) ($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+                throw new RuntimeException(match ($upload_error) {
+                    UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => __('The CSV exceeds the server upload size limit.', 'glpiinject'),
+                    UPLOAD_ERR_PARTIAL => __('The CSV upload was interrupted. Choose the file and try again.', 'glpiinject'),
+                    UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE => __('The server could not write the uploaded CSV. Check its upload temporary directory.', 'glpiinject'),
+                    UPLOAD_ERR_EXTENSION => __('A server PHP extension blocked the CSV upload.', 'glpiinject'),
+                    default => __('Choose a CSV file to upload.', 'glpiinject'),
+                });
             }
             if (($upload['size'] ?? 0) > 10 * 1024 * 1024) {
                 throw new RuntimeException(__('CSV files must be 10 MB or smaller.', 'glpiinject'));
@@ -76,20 +86,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!move_uploaded_file((string) $upload['tmp_name'], $directory . '/' . $filename)) {
                 throw new RuntimeException(__('The CSV file could not be stored.', 'glpiinject'));
             }
-            if (!empty($model['csv_file']) && basename($model['csv_file']) === $model['csv_file']) {
-                $old_path = $directory . '/' . $model['csv_file'];
-                if (is_file($old_path)) {
-                    unlink($old_path);
-                }
-            }
-            $model_item->update([
+            $uploaded_model = array_replace($model, [
                 'id' => $model_id,
                 'csv_file' => $filename,
                 'delimiter' => $delimiter,
                 'file_encoding' => $encoding,
                 'has_header' => isset($_POST['has_header']) ? 1 : 0,
             ]);
-            Html::redirect($CFG_GLPI['root_doc'] . '/plugins/glpiinject/front/index.php?id=' . $model_id);
+            try {
+                $uploaded_preview = $service->preview($uploaded_model, $target);
+                if (!$model_item->update([
+                    'id' => $model_id,
+                    'csv_file' => $filename,
+                    'delimiter' => $delimiter,
+                    'file_encoding' => $encoding,
+                    'has_header' => $uploaded_model['has_header'],
+                ])) {
+                    throw new RuntimeException(__('The CSV was uploaded but its model settings could not be saved.', 'glpiinject'));
+                }
+                if (!$model_item->getFromDB($model_id) || ($model_item->fields['csv_file'] ?? null) !== $filename) {
+                    throw new RuntimeException(__('The uploaded CSV reference could not be verified. Reload the model before continuing.', 'glpiinject'));
+                }
+            } catch (Throwable $exception) {
+                if (($model_item->fields['csv_file'] ?? null) !== $filename) {
+                    unlink($directory . '/' . $filename);
+                }
+                throw $exception;
+            }
+            if (!empty($model['csv_file']) && basename($model['csv_file']) === $model['csv_file']) {
+                $old_path = $directory . '/' . $model['csv_file'];
+                if (is_file($old_path)) {
+                    unlink($old_path);
+                }
+            }
+            $model = $uploaded_model;
+            $preview = $uploaded_preview;
         }
 
         if ($action === 'save_mapping') {

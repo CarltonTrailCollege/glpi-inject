@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.35] - 2026-10-20
+
+### Fixed
+
+- Parse uploaded CSVs and verify saved model file references before showing the loaded state directly; preserve the previous CSV until replacement succeeds.
+- Report PHP upload size, interrupted upload, temporary-directory, and empty POST failures rather than silently leaving Continue disabled.
+- Submit uploads to an explicit model URL and remove the import confirmation from the file-loading form.
+
 ## [0.1.0-alpha.34] - 2026-10-20
 
 ### Changed
