@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.20] - 2026-10-20
+
+### Fixed
+
+- Correct plugin version metadata; alpha.19 had accidentally continued reporting alpha.18.
+
 ## [0.1.0-alpha.18] - 2026-10-20
 
 ### Changed
