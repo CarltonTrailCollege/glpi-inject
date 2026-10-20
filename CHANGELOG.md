@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.14] - 2026-10-20
+
+### Changed
+
+- Keep the viewport at the preview results after refreshing the preview.
+
 ## [0.1.0-alpha.13] - 2026-10-20
 
 ### Fixed

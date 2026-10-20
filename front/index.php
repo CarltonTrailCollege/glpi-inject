@@ -22,6 +22,7 @@ $import_results = null;
 $selected_run = null;
 $error = null;
 $mapping_saved = false;
+$scroll_to_preview = false;
 $model_item = new ImportModel();
 $model = null;
 
@@ -135,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $model['has_header'] = (int) $model['has_header'];
         if ($action === 'preview') {
             $preview = $service->preview($model, $target);
+            $scroll_to_preview = true;
         } elseif ($action === 'run_import') {
             if ($model['mappings'] === []) {
                 throw new RuntimeException(__('Configure at least one column mapping before importing.', 'glpiinject'));
@@ -247,6 +249,7 @@ TemplateRenderer::getInstance()->display('@glpiinject/asset_targets.html.twig', 
     'csrf_token' => Session::getNewCSRFToken(),
     'error' => $error,
     'mapping_saved' => $mapping_saved,
+    'scroll_to_preview' => $scroll_to_preview,
     'root_doc' => $CFG_GLPI['root_doc'],
 ]);
 
