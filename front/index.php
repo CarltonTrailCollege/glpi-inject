@@ -159,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $model['match_field'] = $match_field;
             $model['mappings'] = $mappings;
             $mapping_saved = true;
+            $scroll_to_preview = true;
         }
 
         if (empty($model['csv_file'])) {

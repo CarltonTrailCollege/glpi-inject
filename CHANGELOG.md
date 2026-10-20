@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.37] - 2026-10-20
+
+### Fixed
+
+- Scroll to the top of Preview after successfully saving column mappings instead of leaving the page at the top.
+
 ## [0.1.0-alpha.36] - 2026-10-20
 
 ### Changed
