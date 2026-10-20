@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.29] - 2026-10-20
+
+### Added
+
+- Add an Edit button beside Continue in the import model picker to open the currently selected model's edit page.
+
 ## [0.1.0-alpha.28] - 2026-10-20
 
 ### Fixed

@@ -25,7 +25,7 @@
             {% else %}
                 <form method="get" class="row g-2 align-items-end">
                     <div class="col-12 col-lg-8"><label class="form-label" for="model-select">{{ __('Model', 'glpiinject') }}</label><select class="form-select" id="model-select" name="id" required><option value="">{{ __('Select a model', 'glpiinject') }}</option>{% for entry in models %}<option value="{{ entry.id }}" {{ model and model.id == entry.id ? 'selected' : '' }}>{{ entry.name }}</option>{% endfor %}</select></div>
-                    <div class="col-12 col-lg-4"><button class="btn btn-primary" type="submit">{{ __('Continue', 'glpiinject') }}</button></div>
+                    <div class="col-12 col-lg-4 d-flex flex-wrap gap-2"><button class="btn btn-primary" type="submit">{{ __('Continue', 'glpiinject') }}</button><button class="btn btn-outline-secondary" type="submit" id="edit-selected-model" data-edit-url="{{ root_doc }}/plugins/glpiinject/front/models.php"><i class="ti ti-edit" aria-hidden="true"></i> {{ __('Edit', 'glpiinject') }}</button></div>
                 </form>
             {% endif %}
         </section>
@@ -132,6 +132,16 @@
 </div>
 
 <script>
+const modelSelect = document.getElementById('model-select');
+const editSelectedModel = document.getElementById('edit-selected-model');
+modelSelect?.form.addEventListener('submit', (event) => {
+    if (event.submitter !== editSelectedModel) return;
+    event.preventDefault();
+    const editUrl = new URL(editSelectedModel.dataset.editUrl, window.location.href);
+    editUrl.searchParams.set('edit', modelSelect.value);
+    window.location.assign(editUrl.href);
+});
+
 document.querySelectorAll('.mapping-option').forEach((select) => {
     select.addEventListener('change', () => {
         const selected = select.selectedOptions[0];
