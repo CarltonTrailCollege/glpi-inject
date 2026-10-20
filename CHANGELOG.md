@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.34] - 2026-10-20
+
+### Changed
+
+- Rename the CSV header checkbox to First Row is Header in upload and model settings.
+
 ## [0.1.0-alpha.33] - 2026-10-20
 
 ### Changed
