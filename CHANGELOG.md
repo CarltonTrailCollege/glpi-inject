@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.22] - 2026-10-20
+
+### Fixed
+
+- Clear GLPI's compiled/template cache after Debian plugin deployment so updated progress and result templates appear immediately.
+
 ## [0.1.0-alpha.21] - 2026-10-20
 
 ### Changed

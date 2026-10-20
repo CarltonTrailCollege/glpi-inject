@@ -80,5 +80,6 @@ find "$PLUGIN_DIR" -type f -exec chmod 0640 {} +
 echo "Installing GLPI Inject in $GLPI_DIR"
 runuser -u "$WEB_USER" -- "$PHP_BIN" "$CONSOLE" plugin:install --force glpiinject
 runuser -u "$WEB_USER" -- "$PHP_BIN" "$CONSOLE" plugin:activate glpiinject
+runuser -u "$WEB_USER" -- "$PHP_BIN" "$CONSOLE" cache:clear
 
 echo "GLPI Inject is installed and activated."
