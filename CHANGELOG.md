@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.13] - 2026-10-20
+
+### Fixed
+
+- Submit the Automatic detection encoding choice as the value expected by the upload handler.
+- Verify automatic decoding with a Windows-1252 CSV regression.
+
 ## [0.1.0-alpha.12] - 2026-10-20
 
 ### Changed

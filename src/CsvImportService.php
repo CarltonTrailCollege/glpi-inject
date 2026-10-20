@@ -445,27 +445,34 @@ final class CsvImportService
         }
 
         $path = PLUGIN_GLPIINJECT_UPLOAD_DIR . '/' . $filename;
-        $handle = fopen($path, 'rb');
-        if ($handle === false) {
+        $contents = file_get_contents($path);
+        if ($contents === false) {
             throw new RuntimeException(__('The CSV file could not be opened.', 'glpiinject'));
         }
         $encoding = (string) ($model['file_encoding'] ?? 'UTF-8');
         if ($encoding === 'Automatic') {
-            $sample = file_get_contents($path);
-            if ($sample === false) {
-                fclose($handle);
-                throw new RuntimeException(__('The CSV file could not be read.', 'glpiinject'));
-            }
-            if (str_starts_with($sample, "\xEF\xBB\xBF") || preg_match('//u', $sample) === 1) {
+            if (str_starts_with($contents, "\xEF\xBB\xBF") || preg_match('//u', $contents) === 1) {
                 $encoding = 'UTF-8';
             } else {
                 $encoding = 'Windows-1252';
             }
         }
-        if ($encoding !== 'UTF-8' && stream_filter_append($handle, 'convert.iconv/' . $encoding . '/UTF-8') === false) {
-            fclose($handle);
-            throw new RuntimeException(__('The selected file encoding is not available.', 'glpiinject'));
+
+        if ($encoding !== 'UTF-8') {
+            $contents = iconv($encoding, 'UTF-8', $contents);
+            if ($contents === false) {
+                throw new RuntimeException(__('The selected file encoding could not be converted to UTF-8.', 'glpiinject'));
+            }
         }
+
+        $handle = fopen('php://temp', 'w+b');
+        if ($handle === false || fwrite($handle, $contents) === false) {
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+            throw new RuntimeException(__('The CSV contents could not be prepared for reading.', 'glpiinject'));
+        }
+        rewind($handle);
 
         try {
             $headers = [];

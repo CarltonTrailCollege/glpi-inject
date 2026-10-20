@@ -214,6 +214,16 @@ namespace {
     assert($headerless_preview['records'][0]['values'][1] === 'CTC-003');
     unlink($headerless_path);
 
+    $automatic_encoding_path = __DIR__ . '/fixtures/glpiinject/automatic-encoding.csv';
+    file_put_contents($automatic_encoding_path, "Caf\xE9 laptop,CTC-004,Legacy encoded\n");
+    $automatic_encoding_model = $model;
+    $automatic_encoding_model['csv_file'] = 'automatic-encoding.csv';
+    $automatic_encoding_model['has_header'] = 0;
+    $automatic_encoding_model['file_encoding'] = 'Automatic';
+    $automatic_encoding_preview = $service->preview($automatic_encoding_model, $target);
+    assert($automatic_encoding_preview['records'][0]['values'][0] === "Caf\xC3\xA9 laptop");
+    unlink($automatic_encoding_path);
+
     $related_path = __DIR__ . '/fixtures/glpiinject/related.csv';
     file_put_contents($related_path, "Laptop D,Acme,Fourth row\nLaptop E,,Fifth row\n");
     $related_model = $model;
