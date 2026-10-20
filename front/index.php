@@ -191,6 +191,14 @@ if ($run_id > 0) {
                 'items_id' => (int) $log_row['items_id'],
             ];
         }
+        $failed_row = null;
+        foreach ($import_results['rows'] as $result_row) {
+            if ($result_row['status'] === 'failed') {
+                $failed_row = $result_row;
+                break;
+            }
+        }
+        $import_results['first_error'] = $failed_row['message'] ?? null;
     }
 }
 
