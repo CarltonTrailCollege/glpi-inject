@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.16] - 2026-10-20
+
+### Changed
+
+- Scroll to the active import progress panel after Launch so progress and any batch error are visible immediately.
+
 ## [0.1.0-alpha.15] - 2026-10-20
 
 ### Changed

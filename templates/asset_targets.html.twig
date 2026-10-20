@@ -96,7 +96,7 @@
             {% endif %}
 
             {% if selected_run and selected_run.status == 'running' %}
-                <section class="border rounded p-3 mb-3" id="import-progress" data-batch-url="{{ batch_url }}" data-run-id="{{ selected_run.id }}" data-offset="{{ selected_run.processed }}" data-total="{{ selected_run.total }}" data-csrf-token="{{ csrf_token }}">
+                <section class="border rounded p-3 mb-3" id="import-progress" style="scroll-margin-top: 5rem;" data-batch-url="{{ batch_url }}" data-run-id="{{ selected_run.id }}" data-offset="{{ selected_run.processed }}" data-total="{{ selected_run.total }}" data-csrf-token="{{ csrf_token }}">
                     <div class="hr-text mb-3"><i class="ti ti-chart-bar"></i><span>{{ __('Import progress', 'glpiinject') }}</span></div>
                     <div class="progress" role="progressbar" aria-label="{{ __('Injection of the file', 'glpiinject') }}" aria-valuenow="{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 0 }}" aria-valuemin="0" aria-valuemax="100">
                         <div class="progress-bar progress-bar-striped progress-bar-animated {{ selected_run.total ? '' : 'progress-bar-indeterminate' }}" style="width: {{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 30 }}%">{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round ~ '%' : '' }}</div>
@@ -134,6 +134,8 @@ document.querySelectorAll('.mapping-option').forEach((select) => {
 
 {% if scroll_to_preview %}
 document.getElementById('preview-section')?.scrollIntoView({behavior: 'smooth', block: 'start'});
+{% elseif selected_run and selected_run.status == 'running' %}
+document.getElementById('import-progress')?.scrollIntoView({behavior: 'smooth', block: 'start'});
 {% endif %}
 
 const progress = document.getElementById('import-progress');
