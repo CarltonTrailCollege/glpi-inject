@@ -75,6 +75,31 @@ namespace {
         }
     }
 
+    class CommonDropdown extends CommonDBTM
+    {
+        public static function getNameField(): string
+        {
+            return 'name';
+        }
+    }
+
+    class CommonTreeDropdown extends CommonDropdown {}
+
+    final class TestLocation extends CommonTreeDropdown
+    {
+        public static array $records = [];
+
+        public function canUpdate(): bool
+        {
+            return false;
+        }
+    }
+
+    final class Entity extends CommonTreeDropdown
+    {
+        public static array $records = [];
+    }
+
     final class Session
     {
         public static function haveRight(string $right, int $value): bool
@@ -415,5 +440,97 @@ namespace {
     assert(TestAsset::$records[1]['name'] === 'Name only asset');
     unlink($name_only_path);
 
-    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, staged batches, cursor-streamed imports, and name-only import passed.\n";
+    $normalization_model = $name_only_model;
+    $normalization_model['can_add_dropdown'] = 1;
+    $normalization_model['date_format'] = 'yyyy-mm-dd';
+    $normalization_model['mappings'][1] = ['itemtype' => TestLocation::class, 'field' => 'name', 'linkfield' => 'locations_id'];
+    $normalization_model['mappings'][2] = ['itemtype' => TestAsset::class, 'field' => 'date_mod', 'linkfield' => 'date_mod'];
+    $normalization_target = $name_only_target;
+    $normalization_target['mapping_options'][] = [
+        'itemtype' => TestLocation::class, 'field' => 'name', 'linkfield' => 'locations_id',
+        'label' => 'Location -> Location', 'is_relation' => true,
+    ];
+    $normalization_target['mapping_options'][] = [
+        'itemtype' => TestAsset::class, 'field' => 'date_mod', 'linkfield' => 'date_mod',
+        'label' => 'Modified', 'datatype' => 'datetime', 'is_relation' => false,
+    ];
+    $normalization_path = __DIR__ . '/fixtures/glpiinject/normalization.csv';
+    file_put_contents($normalization_path, "Name,Location,Modified\nS0010,CT 154 Classroom PCP Lab,11/14/2024 14:37\n");
+    $normalization_model['csv_file'] = 'normalization.csv';
+    $normalization_preview = $service->preview($normalization_model, $normalization_target);
+    assert($normalization_preview['records'][0]['valid'] === true);
+    assert(TestLocation::$records === []);
+    unlink($normalization_path);
+
+    TestAsset::$records = [];
+    $date_cases = [
+        ['11/14/2024 14:37', '2024-11-14 14:37:00'],
+        ['1/31/2025 10:22', '2025-01-31 10:22:00'],
+        ['3/20/2025 9:14', '2025-03-20 09:14:00'],
+        ['9/12/2025 15:14', '2025-09-12 15:14:00'],
+        ['5/8/2026 16:56', '2026-05-08 16:56:00'],
+        ['2026-05-08T16:56:12', '2026-05-08 16:56:12'],
+    ];
+    foreach ($date_cases as $index => [$input_date, $expected_date]) {
+        $normalized_import = $service->processStagedBatch($normalization_model, $normalization_target, [
+            ['line' => $index + 2, 'row' => ['Normalized ' . $index, 'CT 154 Classroom PCP Lab', $input_date]],
+        ]);
+        assert($normalized_import['created'] === 1);
+        assert($normalized_import['failed'] === 0);
+        assert(TestAsset::$records[$index + 1]['date_mod'] === $expected_date);
+        assert(TestAsset::$records[$index + 1]['locations_id'] === 1);
+    }
+    assert(count(TestLocation::$records) === 1);
+
+    $normalization_model['date_format'] = 'dd-mm-yyyy';
+    $preferred_date = $service->processStagedBatch($normalization_model, $normalization_target, [
+        ['line' => 10, 'row' => ['Preferred date', 'CT 154 Classroom PCP Lab', '5/8/2026 16:56']],
+    ]);
+    assert($preferred_date['created'] === 1);
+    assert(TestAsset::$records[7]['date_mod'] === '2026-08-05 16:56:00');
+    $invalid_date = $service->processStagedBatch($normalization_model, $normalization_target, [
+        ['line' => 11, 'row' => ['Invalid date', 'CT 154 Classroom PCP Lab', '2/30/2026 16:56']],
+    ]);
+    assert($invalid_date['failed'] === 1);
+
+    $normalization_model['can_add_dropdown'] = 0;
+    $missing_location = $service->processStagedBatch($normalization_model, $normalization_target, [
+        ['line' => 12, 'row' => ['Missing location', 'Temporary Location', '2026-05-08']],
+    ]);
+    assert($missing_location['failed'] === 1);
+    assert(count(TestLocation::$records) === 1);
+
+    $normalization_model['can_add_dropdown'] = 1;
+    $normalization_model['mappings'][1]['itemtype'] = Entity::class;
+    $entity_target = $normalization_target;
+    $entity_target['mapping_options'][1]['itemtype'] = Entity::class;
+    $blocked_entity = $service->processStagedBatch($normalization_model, $entity_target, [
+        ['line' => 13, 'row' => ['Blocked entity', 'New Entity', '2026-05-08']],
+    ]);
+    assert($blocked_entity['failed'] === 1);
+    assert(Entity::$records === []);
+
+    $normalization_model['mappings'][1]['itemtype'] = TestLocation::class;
+    $normalization_model['behavior_add'] = 0;
+    $normalization_model['behavior_update'] = 1;
+    $normalization_model['match_field'] = 'name';
+    $update_only = $service->processStagedBatch($normalization_model, $normalization_target, [
+        ['line' => 14, 'row' => ['Normalized 0', 'Temporary Location', '2026-05-08']],
+        ['line' => 15, 'row' => ['New asset disabled', 'Temporary Location', '2026-05-08']],
+    ]);
+    assert($update_only['updated'] === 1);
+    assert($update_only['created'] === 0);
+    assert($update_only['failed'] === 1);
+    assert(count(TestLocation::$records) === 2);
+    $normalization_model['behavior_add'] = 1;
+    $normalization_model['behavior_update'] = 0;
+    $create_only = $service->processStagedBatch($normalization_model, $normalization_target, [
+        ['line' => 16, 'row' => ['Normalized 0', 'Temporary Location', '2026-05-08']],
+        ['line' => 17, 'row' => ['New asset enabled', 'Temporary Location', '2026-05-08']],
+    ]);
+    assert($create_only['created'] === 1);
+    assert($create_only['updated'] === 0);
+    assert($create_only['failed'] === 1);
+
+    echo "CSV importer regressions passed, including date normalization, Location creation/reuse, read-only preview, entity exclusion, and asset create/update flags.\n";
 }

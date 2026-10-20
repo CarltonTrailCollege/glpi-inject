@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.0-alpha.28] - 2026-10-20
+
+### Fixed
+
+- Normalize common CSV date/datetime formats, keeping the model's selected ordering as the preference for ambiguous dates and rejecting invalid calendar dates.
+- Honor dropdown creation for tree dropdowns such as Locations, reusing existing values and continuing to prohibit entity creation.
+- Keep preview read-only and avoid applying asset update permission requirements to related dropdown values that only need lookup or creation.
+- Add regressions for reported date values, Location creation/reuse, entity exclusion, preview safety, and independent asset creation/update flags.
+
 ## [0.1.0-alpha.27] - 2026-10-20
 
 ### Fixed

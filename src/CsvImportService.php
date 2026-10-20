@@ -31,7 +31,7 @@ final class CsvImportService
                 );
             }
             try {
-                $this->mapRow($row, $model['mappings'], $target, $model);
+                $this->mapRow($row, $model['mappings'], $target, $model, false);
             } catch (RuntimeException $exception) {
                 $errors[] = $exception->getMessage();
             }
@@ -201,7 +201,7 @@ final class CsvImportService
                 continue;
             }
 
-            $must_write = !$mapping['is_relation'] || (int) ($model['can_add_dropdown'] ?? 0) === 1;
+            $must_write = !$mapping['is_relation'];
             if ($must_write) {
                 $mapped_itemtype = $mapping['is_relation'] ? $mapping['itemtype'] : $itemtype;
                 if (!is_a($mapped_itemtype, CommonDBTM::class, true)) {
@@ -326,7 +326,7 @@ final class CsvImportService
         return [];
     }
 
-    private function mapRow(array $row, array $mappings, array $target, array $model): array
+    private function mapRow(array $row, array $mappings, array $target, array $model, bool $create_dropdowns = true): array
     {
         $values = [];
         $mapping_options = $target['mapping_options'] ?? [];
@@ -364,11 +364,17 @@ final class CsvImportService
                     if (
                         (int) ($model['can_add_dropdown'] ?? 0) === 1
                         && $related_item instanceof CommonDropdown
-                        && !$related_item instanceof CommonTreeDropdown
-                        && $related_itemtype !== \Entity::class
+                        && !$related_item instanceof \Entity
                         && $related_item->canCreate()
                     ) {
-                        $name_field = $related_item::getNameField();
+                        if (!$create_dropdowns) {
+                            continue;
+                        }
+                        $name_field = $related_item instanceof CommonTreeDropdown ? 'name' : $related_item::getNameField();
+                        if ($related_item->getFromDBByCrit([$name_field => $value])) {
+                            $values[$mapping['linkfield']] = $related_item->getID();
+                            continue;
+                        }
                         $new_id = $related_item->add([
                             $name_field => $value,
                             'entities_id' => (int) $model['entities_id'],
@@ -475,9 +481,12 @@ final class CsvImportService
             ];
             $date_format = $formats[$model['date_format'] ?? 'yyyy-mm-dd'] ?? 'Y-m-d';
             $normalized_value = preg_replace('/(?<=\d)\/(?=\d)/', '-', $value);
-            $input_formats = $datatype === 'datetime'
-                ? [$date_format . ' H:i:s', $date_format . ' H:i', $date_format]
-                : [$date_format . ' H:i:s', $date_format . ' H:i', $date_format];
+            $input_formats = [];
+            foreach (array_unique([$date_format, 'Y-m-d', 'm-d-Y', 'd-m-Y']) as $format) {
+                foreach ([' H:i:s', ' H:i', '', '\\TH:i:s', ' g:i:s A', ' g:i A'] as $time_format) {
+                    $input_formats[] = $format . $time_format;
+                }
+            }
             $date = false;
             foreach ($input_formats as $input_format) {
                 $candidate = \DateTimeImmutable::createFromFormat('!' . $input_format, $normalized_value);
