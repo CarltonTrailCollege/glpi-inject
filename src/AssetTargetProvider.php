@@ -163,10 +163,10 @@ final class AssetTargetProvider
             }
 
             $targets[$itemtype] = [
-                'label' => $definition->fields['name'],
+                'label' => $this->getDefinitionLabel($definition),
                 'itemtype' => $itemtype,
                 'fields' => $this->getFields($itemtype),
-                'mapping_options' => $this->getMappingOptions($itemtype, (string) $definition->fields['name']),
+                'mapping_options' => $this->getMappingOptions($itemtype, $this->getDefinitionLabel($definition)),
             ];
         }
 
@@ -217,7 +217,7 @@ final class AssetTargetProvider
             }
 
             $table = (string) $option['table'];
-            $destination_itemtype = getItemTypeForTable($table);
+            $destination_itemtype = $option['itemtype'] ?? getItemTypeForTable($table);
             if (!is_string($destination_itemtype) || !class_exists($destination_itemtype)) {
                 continue;
             }
@@ -239,7 +239,7 @@ final class AssetTargetProvider
                 'itemtype' => $is_primary_field ? $primary_itemtype : $destination_itemtype,
                 'itemtype_label' => $is_primary_field
                     ? $primary_label
-                    : $this->getSafeTypeName($destination_itemtype, (string) $option['name']),
+                    : $source_label,
                 'field' => (string) $option['field'],
                 'linkfield' => $linkfield,
                 'label' => sprintf('%s -> %s', $source_label, trim((string) $option['name'])),
@@ -251,6 +251,22 @@ final class AssetTargetProvider
         }
 
         return $options;
+    }
+
+    private function getDefinitionLabel(object $definition): string
+    {
+        try {
+            if (method_exists($definition, 'getTranslatedName')) {
+                $label = trim((string) $definition->getTranslatedName());
+                if ($label !== '') {
+                    return $label;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        $fields = $definition->fields ?? [];
+        return trim((string) ($fields['label'] ?? $fields['system_name'] ?? 'Custom asset'));
     }
 
     private function getSafeTypeName(string $itemtype, string $fallback): string

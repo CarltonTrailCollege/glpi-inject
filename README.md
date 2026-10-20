@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-alpha.6` (alpha; expect incomplete parity and breaking changes).
+**Current release:** `0.1.0-alpha.7` (alpha; expect incomplete parity and breaking changes).
 
 ## Compatibility
 
@@ -51,4 +51,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.6`; the matching GitHub tag is `v0.1.0-alpha.6`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.7`; the matching GitHub tag is `v0.1.0-alpha.7`.

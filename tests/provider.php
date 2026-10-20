@@ -96,6 +96,7 @@ namespace {
                     'table' => 'glpi_computers',
                     'field' => 'name',
                     'linkfield' => 'assets_id',
+                    'itemtype' => Computer::class,
                     'name' => 'General',
                     'datatype' => 'dropdown',
                 ];
@@ -104,6 +105,7 @@ namespace {
                     'table' => 'glpi_monitors',
                     'field' => 'name',
                     'linkfield' => 'assets_id',
+                    'itemtype' => Monitor::class,
                     'name' => 'General',
                     'datatype' => 'dropdown',
                 ];
@@ -144,7 +146,12 @@ namespace {
 
     final class TestAssetDefinition
     {
-        public array $fields = ['name' => 'Vehicle', 'is_active' => 1];
+        public array $fields = ['label' => 'Vehicle', 'system_name' => 'Vehicle', 'is_active' => 1];
+
+        public function getTranslatedName(): string
+        {
+            return $this->fields['label'];
+        }
 
         public function getAssetClassName(): string
         {
@@ -154,13 +161,6 @@ namespace {
 
     function getItemTypeForTable(string $table): string
     {
-        if ($table === 'glpi_computers') {
-            return Computer::class;
-        }
-        if ($table === 'glpi_monitors') {
-            return Monitor::class;
-        }
-
         return \Glpi\Asset\Asset::class;
     }
 
@@ -176,7 +176,7 @@ namespace {
     $CFG_GLPI['root_doc'] = '';
     $CFG_GLPI['asset_types'] = [Computer::class];
     $inactive_definition = new TestAssetDefinition();
-    $inactive_definition->fields['name'] = 'Inactive Equipment';
+    $inactive_definition->fields['label'] = 'Inactive Equipment';
     $inactive_definition->fields['is_active'] = 0;
     \Glpi\Asset\AssetDefinitionManager::$definitions = [new TestAssetDefinition(), $inactive_definition];
     $targets = (new \GlpiPlugin\Glpiinject\AssetTargetProvider())->getTargets();
@@ -184,6 +184,7 @@ namespace {
 
     assert(isset($targets[Computer::class]));
     assert($target['label'] === 'Vehicle');
+    assert(!isset($targets['InactiveEquipment']));
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
     assert($target['mapping_options'][0]['label'] === 'Vehicle -> Serial number');

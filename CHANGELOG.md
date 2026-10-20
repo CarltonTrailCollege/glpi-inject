@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.7] - 2026-10-20
+
+### Fixed
+
+- Read custom asset display names from GLPI's definition label and translation APIs to prevent blank generic asset targets.
+- Use explicit GLPI search-option itemtypes when qualifying duplicate mapping field labels.
+
 ## [0.1.0-alpha.6] - 2026-10-20
 
 ### Fixed
