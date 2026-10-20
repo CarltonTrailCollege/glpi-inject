@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.25] - 2026-10-20
+
+### Fixed
+
+- Register the import AJAX endpoint with GLPI's central-access firewall strategy so legitimate import requests are not rejected with HTTP 403.
+
 ## [0.1.0-alpha.24] - 2026-10-20
 
 ### Fixed

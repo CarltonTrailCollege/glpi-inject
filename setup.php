@@ -7,7 +7,7 @@ require_once __DIR__ . '/src/ImportRun.php';
 require_once __DIR__ . '/src/ImportRunLog.php';
 require_once __DIR__ . '/src/Menu.php';
 
-define('PLUGIN_GLPIINJECT_VERSION', '0.1.0-alpha.24');
+define('PLUGIN_GLPIINJECT_VERSION', '0.1.0-alpha.25');
 define('PLUGIN_GLPIINJECT_MIN_GLPI', '11.0.8');
 define('PLUGIN_GLPIINJECT_MAX_GLPI', '11.99.99');
 if (!defined('PLUGIN_GLPIINJECT_UPLOAD_DIR')) {
@@ -17,6 +17,12 @@ if (!defined('PLUGIN_GLPIINJECT_UPLOAD_DIR')) {
 function plugin_init_glpiinject(): void
 {
     global $PLUGIN_HOOKS;
+
+    \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
+        'glpiinject',
+        '#^/ajax/import_batch\.php$#',
+        \Glpi\Http\Firewall::STRATEGY_CENTRAL_ACCESS
+    );
 
     Plugin::registerClass(GlpiPlugin\Glpiinject\ImportModel::class);
     Plugin::registerClass(GlpiPlugin\Glpiinject\ImportRun::class);
