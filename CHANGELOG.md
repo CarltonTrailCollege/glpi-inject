@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.27] - 2026-10-20
+
+### Fixed
+
+- Open saved import results with a GET request after the final batch instead of reloading the Launch POST with a consumed CSRF token.
+
 ## [0.1.0-alpha.26] - 2026-10-20
 
 ### Fixed
