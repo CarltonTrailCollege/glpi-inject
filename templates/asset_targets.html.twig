@@ -80,7 +80,10 @@
                                 </tr>
                             {% endfor %}
                         </tbody></table></div>
-                        <button class="btn btn-primary" type="submit">{{ __('Save mapping', 'glpiinject') }}</button>
+                        <div class="d-flex flex-wrap align-items-center gap-3">
+                            <button class="btn btn-primary" type="submit">{{ __('Save mapping', 'glpiinject') }}</button>
+                            {% if mapping_saved %}<span class="text-success fw-semibold" role="status" aria-live="polite"><i class="ti ti-check" aria-hidden="true"></i> {{ __('Saved successfully.', 'glpiinject') }}</span>{% endif %}
+                        </div>
                     </form>
                 </section>
 

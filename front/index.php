@@ -21,6 +21,7 @@ $preview = null;
 $import_results = null;
 $selected_run = null;
 $error = null;
+$mapping_saved = false;
 $model_item = new ImportModel();
 $model = null;
 
@@ -114,12 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($match_field !== '' && !in_array($match_field, $matchable_fields, true)) {
                 throw new RuntimeException(__('The duplicate matching field is not valid.', 'glpiinject'));
             }
-            $model_item->update([
+            $updated = $model_item->update([
                 'id' => $model_id,
                 'match_field' => $match_field === '' ? null : $match_field,
                 'mappings' => json_encode($mappings, JSON_THROW_ON_ERROR),
             ]);
-            Html::redirect($CFG_GLPI['root_doc'] . '/plugins/glpiinject/front/index.php?id=' . $model_id);
+            if (!$updated) {
+                throw new RuntimeException(__('The mapping could not be saved.', 'glpiinject'));
+            }
+            $model['match_field'] = $match_field;
+            $model['mappings'] = $mappings;
+            $mapping_saved = true;
         }
 
         if (empty($model['csv_file'])) {
@@ -240,6 +246,7 @@ TemplateRenderer::getInstance()->display('@glpiinject/asset_targets.html.twig', 
     'batch_url' => $CFG_GLPI['root_doc'] . '/plugins/glpiinject/ajax/import_batch.php',
     'csrf_token' => Session::getNewCSRFToken(),
     'error' => $error,
+    'mapping_saved' => $mapping_saved,
     'root_doc' => $CFG_GLPI['root_doc'],
 ]);
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.12] - 2026-10-20
+
+### Changed
+
+- Save column mappings in place and show an inline success confirmation beside the save button.
+
 ## [0.1.0-alpha.11] - 2026-10-20
 
 ### Fixed
