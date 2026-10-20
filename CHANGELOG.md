@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.18] - 2026-10-20
+
+### Changed
+
+- Scroll completed and failed import runs to their results and report zero-created runs as having no imported assets.
+
 ## [0.1.0-alpha.17] - 2026-10-20
 
 ### Fixed
