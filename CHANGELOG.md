@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0-alpha.38] - 2026-10-20
+
+### Security
+
+- Enforce entity access on direct model/run endpoints and restore active-entity history filtering.
+- Require record-level asset write permissions and entity-scoped, readable related-item matches with input-level dropdown creation checks.
+- Serialize same-session batches, reject stale offsets and unknown actions, and prevent unauthorized/rejected requests from changing run failure state.
+- Sanitize actual exported CSV cells, including error messages, and check model deletion succeeds before removing its CSV.
+- Add security regressions and document review scope, controls, integration-test gaps, and remaining concurrency/transaction risks in SECURITY.md.
+
 ## [0.1.0-alpha.37] - 2026-10-20
 
 ### Fixed

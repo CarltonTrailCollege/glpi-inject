@@ -22,6 +22,28 @@ namespace {
     {
         public array $fields = [];
         public static array $records = [];
+        public static bool $allow_item_write = true;
+        public static bool $allow_item_read = true;
+
+        public static function getTable($classname = null): string
+        {
+            return 'test_items';
+        }
+
+        public function isEntityAssign(): bool
+        {
+            return false;
+        }
+
+        public function canViewItem(): bool
+        {
+            return static::$allow_item_read;
+        }
+
+        public function can(int $id, int $right, array $input = []): bool
+        {
+            return static::$allow_item_write;
+        }
 
         public function getFromDBByCrit(array $criteria): bool
         {
@@ -89,10 +111,20 @@ namespace {
     {
         public static array $records = [];
 
+        public function isEntityAssign(): bool
+        {
+            return true;
+        }
+
         public function canUpdate(): bool
         {
             return false;
         }
+    }
+
+    function getEntitiesRestrictCriteria(string $table, string $field, int $entity, bool $recursive): array
+    {
+        return ['entities_id' => $entity];
     }
 
     final class Entity extends CommonTreeDropdown
@@ -585,5 +617,55 @@ namespace {
         assert(count(TestAsset::$records) === $record_count);
     }
 
-    echo "CSV importer regressions passed, including default Name matching, date normalization, Location creation/reuse, read-only preview, entity exclusion, and asset create/update flags.\n";
+    TestAsset::$allow_item_write = false;
+    $denied_model = $normalization_model;
+    $denied_model['behavior_update'] = 1;
+    $asset_snapshot = TestAsset::$records;
+    $denied_writes = $service->processStagedBatch($denied_model, $normalization_target, [
+        ['line' => 19, 'row' => ['Normalized 0', 'Temporary Location', '2026-05-08']],
+        ['line' => 20, 'row' => ['Denied new asset', 'Temporary Location', '2026-05-08']],
+    ]);
+    assert($denied_writes['failed'] === 2);
+    assert(TestAsset::$records === $asset_snapshot);
+    TestAsset::$allow_item_write = true;
+
+    TestLocation::$records = [1 => ['name' => 'Shared label', 'entities_id' => 99]];
+    $scoped_model = $denied_model;
+    $scoped_model['entities_id'] = 0;
+    $scoped_model['can_add_dropdown'] = 0;
+    $foreign_relation = $service->processStagedBatch($scoped_model, $normalization_target, [
+        ['line' => 21, 'row' => ['Scoped asset', 'Shared label', '2026-05-08']],
+    ]);
+    assert($foreign_relation['failed'] === 1);
+    assert(TestAsset::$records === $asset_snapshot);
+    $scoped_model['can_add_dropdown'] = 1;
+    $local_relation = $service->processStagedBatch($scoped_model, $normalization_target, [
+        ['line' => 22, 'row' => ['Scoped asset', 'Shared label', '2026-05-08']],
+    ]);
+    assert($local_relation['created'] === 1);
+    assert(TestLocation::$records[2]['entities_id'] === 0);
+    assert(TestAsset::$records[count(TestAsset::$records)]['locations_id'] === 2);
+    TestLocation::$allow_item_read = false;
+    $denied_relation = $service->processStagedBatch($scoped_model, $normalization_target, [
+        ['line' => 23, 'row' => ['Denied relation', 'Shared label', '2026-05-08']],
+    ]);
+    assert($denied_relation['failed'] === 1);
+    TestLocation::$allow_item_read = true;
+    TestLocation::$allow_item_write = false;
+    $denied_dropdown = $service->processStagedBatch($scoped_model, $normalization_target, [
+        ['line' => 24, 'row' => ['Denied dropdown', 'Missing dropdown', '2026-05-08']],
+    ]);
+    assert($denied_dropdown['failed'] === 1);
+    assert(count(TestLocation::$records) === 2);
+    TestLocation::$allow_item_write = true;
+
+    require_once dirname(__DIR__) . '/src/CsvExport.php';
+    foreach (['=1+1', '+SUM(1,2)', '-1+2', '@SUM(1)', "\t=1", "\r\n=1", "\0=1"] as $formula) {
+        assert(\GlpiPlugin\Glpiinject\CsvExport::sanitizeCell($formula) === "'" . $formula);
+    }
+    foreach (['Normal text', '123', '["=1+1"]', 'A=B', '<script>alert(1)</script>'] as $plain_value) {
+        assert(\GlpiPlugin\Glpiinject\CsvExport::sanitizeCell($plain_value) === $plain_value);
+    }
+
+    echo "CSV importer regressions passed, including record permissions, entity-scoped references, spreadsheet safety, default Name matching, encoding, date normalization, dropdown reuse, and create/update flags.\n";
 }

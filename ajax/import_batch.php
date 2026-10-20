@@ -11,12 +11,15 @@ include('../../../inc/includes.php');
 header('Content-Type: application/json; charset=UTF-8');
 Html::header_nocache();
 global $DB;
+$processing_started = false;
 
 try {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        throw new RuntimeException(__('Import batches require a POST request.', 'glpiinject'));
+    }
     Session::checkRight('config', UPDATE);
     $current_user_id = (int) Session::getLoginUserID();
     $next_csrf_token = Session::getNewCSRFToken();
-    Session::writeClose();
 
     $run_id = (int) ($_POST['run_id'] ?? 0);
     $offset = max(0, (int) ($_POST['offset'] ?? 0));
@@ -26,11 +29,15 @@ try {
     if (
         !$run->getFromDB($run_id)
         || (int) $run->fields['users_id'] !== $current_user_id
+        || !Session::haveAccessToEntity((int) $run->fields['entities_id'])
     ) {
         throw new RuntimeException(__('Import run not found or unavailable.', 'glpiinject'));
     }
 
     $action = (string) ($_POST['action'] ?? 'batch');
+    if (!in_array($action, ['batch', 'cancel'], true)) {
+        throw new RuntimeException(__('Invalid import action.', 'glpiinject'));
+    }
     if ($action === 'cancel') {
         if (($run->fields['status'] ?? null) === 'running') {
             $run->update([
@@ -78,6 +85,8 @@ try {
     if (
         !$model_item->getFromDB((int) $run->fields['models_id'])
         || (int) $model_item->fields['users_id'] !== (int) $run->fields['users_id']
+        || (int) $model_item->fields['entities_id'] !== (int) $run->fields['entities_id']
+        || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])
     ) {
         throw new RuntimeException(__('Import model not found.', 'glpiinject'));
     }
@@ -87,6 +96,10 @@ try {
     if ($target === null) {
         throw new RuntimeException(__('The selected asset type is no longer active.', 'glpiinject'));
     }
+    if ($offset !== (int) $run->fields['processed']) {
+        throw new RuntimeException(__('This batch request is out of date. Reload the import results.', 'glpiinject'));
+    }
+    $processing_started = true;
 
     $batch_model = $model;
     $batch_model['delimiter'] = (string) $batch_model['delimiter'];
@@ -153,7 +166,7 @@ try {
         'cancelled' => $cancelled,
     ], JSON_THROW_ON_ERROR);
 } catch (Throwable $exception) {
-    if (isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {
+    if ($processing_started && isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {
         try {
             $error_log = new ImportRunLog();
             $error_log->add([

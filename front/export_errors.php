@@ -3,14 +3,16 @@
 use GlpiPlugin\Glpiinject\ImportModel;
 use GlpiPlugin\Glpiinject\ImportRun;
 use GlpiPlugin\Glpiinject\ImportRunLog;
+use GlpiPlugin\Glpiinject\CsvExport;
 
 include('../../../inc/includes.php');
+require_once dirname(__DIR__) . '/src/CsvExport.php';
 
 Session::checkRight('config', READ);
 
 $run_id = (int) ($_GET['run'] ?? 0);
 $run = new ImportRun();
-if (!$run->getFromDB($run_id) || (int) $run->fields['users_id'] !== (int) Session::getLoginUserID()) {
+if (!$run->getFromDB($run_id) || (int) $run->fields['users_id'] !== (int) Session::getLoginUserID() || !Session::haveAccessToEntity((int) $run->fields['entities_id'])) {
     Html::displayRightError();
 }
 
@@ -18,6 +20,8 @@ $model = new ImportModel();
 if (
     !$model->getFromDB((int) $run->fields['models_id'])
     || (int) $model->fields['users_id'] !== (int) Session::getLoginUserID()
+    || (int) $model->fields['entities_id'] !== (int) $run->fields['entities_id']
+    || !Session::haveAccessToEntity((int) $model->fields['entities_id'])
 ) {
     Html::displayNotFoundError();
 }
@@ -46,10 +50,10 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 $output = fopen('php://output', 'wb');
 fputcsv($output, [__('Line', 'glpiinject'), __('Error', 'glpiinject'), __('Original row', 'glpiinject')]);
 foreach ($errors as $error) {
-    $original = array_map(static function ($value): string {
-        $value = (string) $value;
-        return preg_match('/^[\s]*[=+\-@]/', $value) === 1 ? "'" . $value : $value;
-    }, $error['row']);
-    fputcsv($output, [$error['line'], $error['message'], json_encode($original, JSON_UNESCAPED_UNICODE)]);
+    fputcsv($output, array_map([CsvExport::class, 'sanitizeCell'], [
+        (string) $error['line'],
+        $error['message'],
+        json_encode($error['row'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+    ]));
 }
 fclose($output);

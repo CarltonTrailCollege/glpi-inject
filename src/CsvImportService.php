@@ -263,6 +263,9 @@ final class CsvImportService
                         throw new RuntimeException(__('Updates are disabled for this model.', 'glpiinject'));
                     }
                     $values['id'] = $existing->getID();
+                    if (!$existing->can($existing->getID(), UPDATE, $values)) {
+                        throw new RuntimeException(__('You do not have permission to update this item.', 'glpiinject'));
+                    }
                     if (!$existing->update($values)) {
                         throw new RuntimeException(__('GLPI rejected the item update.', 'glpiinject'));
                     }
@@ -274,6 +277,9 @@ final class CsvImportService
                 } else {
                     if ((int) ($model['behavior_add'] ?? 1) !== 1) {
                         throw new RuntimeException(__('Creation is disabled for this model.', 'glpiinject'));
+                    }
+                    if (!$item->can(-1, CREATE, $values)) {
+                        throw new RuntimeException(__('You do not have permission to create this item.', 'glpiinject'));
                     }
                     $created_id = $item->add($values);
                     if ($created_id === false) {
@@ -348,9 +354,15 @@ final class CsvImportService
                     throw new RuntimeException(__('The mapped related item type is invalid.', 'glpiinject'));
                 }
                 $related_item = new $related_itemtype();
-                $related_found = $related_item->getFromDBByCrit([$mapping['field'] => $value]);
+                $entity_criteria = $related_item->isEntityAssign()
+                    ? getEntitiesRestrictCriteria($related_item::getTable(), '', (int) $model['entities_id'], true)
+                    : [];
+                $related_found = $related_item->getFromDBByCrit([$mapping['field'] => $value] + $entity_criteria);
                 if (!$related_found && $related_item instanceof CommonTreeDropdown && $mapping['field'] !== 'completename') {
-                    $related_found = $related_item->getFromDBByCrit(['completename' => $value]);
+                    $related_found = $related_item->getFromDBByCrit(['completename' => $value] + $entity_criteria);
+                }
+                if ($related_found && !$related_item->canViewItem()) {
+                    throw new RuntimeException(__('You do not have permission to read the referenced item.', 'glpiinject'));
                 }
                 if (!$related_found) {
                     if (
@@ -363,14 +375,21 @@ final class CsvImportService
                             continue;
                         }
                         $name_field = $related_item instanceof CommonTreeDropdown ? 'name' : $related_item::getNameField();
-                        if ($related_item->getFromDBByCrit([$name_field => $value])) {
+                        if ($related_item->getFromDBByCrit([$name_field => $value] + $entity_criteria)) {
+                            if (!$related_item->canViewItem()) {
+                                throw new RuntimeException(__('You do not have permission to read the referenced item.', 'glpiinject'));
+                            }
                             $values[$mapping['linkfield']] = $related_item->getID();
                             continue;
                         }
-                        $new_id = $related_item->add([
+                        $dropdown_input = [
                             $name_field => $value,
                             'entities_id' => (int) $model['entities_id'],
-                        ]);
+                        ];
+                        if (!$related_item->can(-1, CREATE, $dropdown_input)) {
+                            throw new RuntimeException(__('You do not have permission to create the referenced dropdown.', 'glpiinject'));
+                        }
+                        $new_id = $related_item->add($dropdown_input);
                         if ($new_id === false) {
                             throw new RuntimeException(__('GLPI rejected creation of the dropdown value.', 'glpiinject'));
                         }

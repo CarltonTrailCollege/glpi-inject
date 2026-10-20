@@ -28,7 +28,7 @@ $model_item = new ImportModel();
 $model = null;
 
 if ($model_id > 0 && $model_item->getFromDB($model_id)) {
-    if ((int) $model_item->fields['users_id'] !== $user_id) {
+    if ((int) $model_item->fields['users_id'] !== $user_id || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])) {
         Html::displayRightError();
     }
     $model = $model_item->fields;
@@ -42,6 +42,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $action = (string) ($_POST['action'] ?? '');
         if ($action === '' && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0 && $_POST === []) {
             throw new RuntimeException(__('The upload request could not be read. Check the server post_max_size and upload_max_filesize limits.', 'glpiinject'));
+        }
+        if (!in_array($action, ['upload_csv', 'save_mapping', 'preview', 'run_import'], true)) {
+            throw new RuntimeException(__('Invalid import action.', 'glpiinject'));
         }
         if ($model === null) {
             throw new RuntimeException(__('Select a model before continuing.', 'glpiinject'));

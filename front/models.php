@@ -18,7 +18,7 @@ $error = null;
 $edit_model = null;
 
 if (isset($_GET['edit']) && $model_item->getFromDB((int) $_GET['edit'])) {
-    if ((int) $model_item->fields['users_id'] !== $user_id) {
+    if ((int) $model_item->fields['users_id'] !== $user_id || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])) {
         Html::displayRightError();
     }
     $edit_model = $model_item->fields;
@@ -29,13 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $action = (string) ($_POST['action'] ?? 'create');
+        if (!in_array($action, ['create', 'update', 'delete'], true)) {
+            throw new RuntimeException(__('Invalid model action.', 'glpiinject'));
+        }
         if ($action === 'delete') {
             $model_id = (int) ($_POST['id'] ?? 0);
-            if (!$model_item->getFromDB($model_id) || (int) $model_item->fields['users_id'] !== $user_id) {
+            if (!$model_item->getFromDB($model_id) || (int) $model_item->fields['users_id'] !== $user_id || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])) {
                 Html::displayRightError();
             }
             $filename = (string) ($model_item->fields['csv_file'] ?? '');
-            $model_item->delete(['id' => $model_id], true);
+            if (!$model_item->delete(['id' => $model_id], true)) {
+                throw new RuntimeException(__('The import model could not be deleted.', 'glpiinject'));
+            }
             if ($filename !== '' && basename($filename) === $filename) {
                 $path = PLUGIN_GLPIINJECT_UPLOAD_DIR . '/' . $filename;
                 if (is_file($path)) {
@@ -78,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         if ($model_id > 0) {
-            if (!$model_item->getFromDB($model_id) || (int) $model_item->fields['users_id'] !== $user_id) {
+            if (!$model_item->getFromDB($model_id) || (int) $model_item->fields['users_id'] !== $user_id || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])) {
                 Html::displayRightError();
             }
             $updated = $model_item->update(['id' => $model_id] + $model_values);
@@ -129,20 +134,9 @@ foreach ($DB->request([
     $runs[] = $row;
 }
 
-$runs = [];
-foreach ($DB->request([
-    'FROM' => ImportRun::getTable(),
-    'WHERE' => ['users_id' => $user_id],
-    'ORDER' => ['date_creation DESC', 'id DESC'],
-    'LIMIT' => 20,
-]) as $row) {
-    $runs[] = $row;
-}
-
 Html::header(__('Import models', 'glpiinject'), $_SERVER['PHP_SELF'], 'tools', 'glpiinject');
 TemplateRenderer::getInstance()->display('@glpiinject/model_management.html.twig', [
     'models' => $models,
-    'runs' => $runs,
     'runs' => $runs,
     'targets' => $provider->getTargets(),
     'error' => $error,
