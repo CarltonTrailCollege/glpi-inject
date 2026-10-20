@@ -1,11 +1,5 @@
 # Changelog
 
-## [0.1.0-alpha.31] - 2026-10-20
-
-### Added
-
-- Show a Selected badge beside the CSV status for the currently selected model, updating immediately when radio selection changes without shifting the table layout.
-
 ## [0.1.0-alpha.30] - 2026-10-20
 
 ### Changed
