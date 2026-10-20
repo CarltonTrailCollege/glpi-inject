@@ -74,6 +74,8 @@ function plugin_glpiinject_install(): bool
             `created` int unsigned NOT NULL DEFAULT '0',
             `updated` int unsigned NOT NULL DEFAULT '0',
             `failed` int unsigned NOT NULL DEFAULT '0',
+            `csv_offset` int unsigned NOT NULL DEFAULT '0',
+            `csv_line` int unsigned NOT NULL DEFAULT '0',
             `date_creation` timestamp NULL DEFAULT NULL,
             `date_mod` timestamp NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
@@ -82,6 +84,16 @@ function plugin_glpiinject_install(): bool
             KEY `status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation ROW_FORMAT=DYNAMIC");
     }
+    $run_migration = new Migration(PLUGIN_GLPIINJECT_VERSION);
+    foreach ([
+        'csv_offset' => ['integer', ['value' => 0]],
+        'csv_line' => ['integer', ['value' => 0]],
+    ] as $field => [$type, $options]) {
+        if (!$DB->fieldExists($runs_table, $field)) {
+            $run_migration->addField($runs_table, $field, $type, $options);
+        }
+    }
+    $run_migration->executeMigration();
 
     $logs_table = 'glpi_plugin_glpiinject_runlogs';
     if (!$DB->tableExists($logs_table)) {

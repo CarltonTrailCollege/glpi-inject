@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'users_id' => $user_id,
                 'entities_id' => (int) Session::getActiveEntity(),
                 'status' => 'running',
-                'total' => $service->countRows($model),
+                'total' => 0,
                 'processed' => 0,
                 'created' => 0,
                 'updated' => 0,
@@ -155,26 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             if ($run_id === false) {
                 throw new RuntimeException(__('Unable to start the import run.', 'glpiinject'));
-            }
-            $staged_count = 0;
-            foreach ($service->getSourceRows($model) as [$line, $row]) {
-                (new ImportRunLog())->add([
-                    'runs_id' => (int) $run_id,
-                    'line' => $line,
-                    'status' => 'pending',
-                    'message' => '',
-                    'itemtype' => $model['itemtype'],
-                    'items_id' => 0,
-                    'source_row' => json_encode($row, JSON_THROW_ON_ERROR),
-                ]);
-                $staged_count++;
-            }
-            if ($staged_count !== (int) $run->fields['total']) {
-                $run->update([
-                    'id' => (int) $run_id,
-                    'total' => $staged_count,
-                    'status' => $staged_count === 0 ? 'completed' : 'running',
-                ]);
             }
             Html::redirect($CFG_GLPI['root_doc'] . '/plugins/glpiinject/front/index.php?id=' . $model_id . '&run=' . (int) $run_id);
         }

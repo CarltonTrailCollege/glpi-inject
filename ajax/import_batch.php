@@ -11,6 +11,7 @@ include('../../../inc/includes.php');
 header('Content-Type: application/json; charset=UTF-8');
 Html::header_nocache();
 Session::checkRight('config', UPDATE);
+Session::writeClose();
 
 global $DB;
 
@@ -23,9 +24,59 @@ try {
     if (
         !$run->getFromDB($run_id)
         || (int) $run->fields['users_id'] !== (int) Session::getLoginUserID()
-        || $run->fields['status'] !== 'running'
     ) {
         throw new RuntimeException(__('Import run not found or unavailable.', 'glpiinject'));
+    }
+
+    $action = (string) ($_POST['action'] ?? 'batch');
+    if ($action === 'cancel') {
+        if (($run->fields['status'] ?? null) === 'running') {
+            $cancel_total = (int) $run->fields['processed'];
+            $cancel_model_item = new ImportModel();
+            if (
+                $cancel_model_item->getFromDB((int) $run->fields['models_id'])
+                && (int) $cancel_model_item->fields['users_id'] === (int) $run->fields['users_id']
+            ) {
+                $cancel_model = $cancel_model_item->fields;
+                $cancel_total = max($cancel_total, (new CsvImportService())->countRows($cancel_model));
+            }
+            $run->update([
+                'id' => $run_id,
+                'status' => 'cancelled',
+                'total' => $cancel_total,
+            ]);
+            $run->getFromDB($run_id);
+        }
+        echo json_encode([
+            'offset' => (int) $run->fields['processed'],
+            'processed' => (int) $run->fields['processed'],
+            'total' => (int) $run->fields['total'],
+            'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
+            'created' => (int) $run->fields['created'],
+            'updated' => (int) $run->fields['updated'],
+            'failed' => (int) $run->fields['failed'],
+            'done' => true,
+            'cancelled' => ($run->fields['status'] ?? null) === 'cancelled',
+        ], JSON_THROW_ON_ERROR);
+        return;
+    }
+
+    if (($run->fields['status'] ?? null) === 'cancelled') {
+        echo json_encode([
+            'offset' => (int) $run->fields['processed'],
+            'processed' => (int) $run->fields['processed'],
+            'total' => (int) $run->fields['total'],
+            'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
+            'created' => (int) $run->fields['created'],
+            'updated' => (int) $run->fields['updated'],
+            'failed' => (int) $run->fields['failed'],
+            'done' => true,
+            'cancelled' => true,
+        ], JSON_THROW_ON_ERROR);
+        return;
+    }
+    if (($run->fields['status'] ?? null) !== 'running') {
+        throw new RuntimeException(__('Import run is no longer running.', 'glpiinject'));
     }
 
     $model_item = new ImportModel();
@@ -42,66 +93,68 @@ try {
         throw new RuntimeException(__('The selected asset type is no longer active.', 'glpiinject'));
     }
 
-    $staged_rows = [];
-    foreach ($DB->request([
-        'FROM' => ImportRunLog::getTable(),
-        'WHERE' => ['runs_id' => $run_id, 'status' => 'pending'],
-        'ORDER' => 'id',
-        'LIMIT' => $batch_size,
-    ]) as $staged_row) {
-        $staged_rows[] = [
-            'id' => (int) $staged_row['id'],
-            'line' => (int) $staged_row['line'],
-            'row' => json_decode((string) $staged_row['source_row'], true) ?: [],
-        ];
-    }
-
-    $batch = (new CsvImportService())->processStagedBatch($model, $target, $staged_rows);
+    $batch_model = $model;
+    $batch_model['delimiter'] = (string) $batch_model['delimiter'];
+    $batch_model['has_header'] = (int) $batch_model['has_header'];
+    $csv_batch = (new CsvImportService())->readBatch(
+        $batch_model,
+        (int) ($run->fields['csv_offset'] ?? 0),
+        (int) ($run->fields['csv_line'] ?? 0),
+        $batch_size
+    );
+    $rows = $csv_batch['rows'];
+    $batch = (new CsvImportService())->processStagedBatch($model, $target, array_map(
+        static fn(array $row) => ['line' => $row[0], 'row' => $row[1]],
+        $rows
+    ));
     $log_item = new ImportRunLog();
-    foreach ($staged_rows as $index => $staged_row) {
-        $outcome = $batch['rows'][$index] ?? [
-            'line' => $staged_row['line'],
-            'status' => 'failed',
-            'message' => __('No result was returned for this row.', 'glpiinject'),
-            'itemtype' => $model['itemtype'],
-            'items_id' => 0,
-        ];
-        $log_item->update([
-            'id' => $staged_row['id'],
+    foreach ($batch['rows'] as $outcome) {
+        $log_values = [
+            'runs_id' => $run_id,
+            'line' => $outcome['line'],
             'status' => $outcome['status'],
             'message' => $outcome['message'] ?? '',
             'itemtype' => $outcome['itemtype'] ?? $model['itemtype'],
             'items_id' => $outcome['items_id'] ?? 0,
-        ]);
+        ];
+        $existing_log = new ImportRunLog();
+        if ($existing_log->getFromDBByCrit(['runs_id' => $run_id, 'line' => $outcome['line']])) {
+            $log_item->update(['id' => $existing_log->getID()] + $log_values);
+        } else {
+            $log_item->add($log_values + ['source_row' => json_encode($outcome['row'] ?? [], JSON_THROW_ON_ERROR)]);
+        }
     }
 
-    $processed = min((int) $run->fields['total'], (int) $run->fields['processed'] + $batch['processed']);
-    $remaining = countElementsInTable(ImportRunLog::getTable(), [
-        'runs_id' => $run_id,
-        'status' => 'pending',
-    ]);
-    $done = $processed >= (int) $run->fields['total'] || $remaining === 0;
-    if ($done) {
-        $processed = (int) $run->fields['total'];
-    }
+    $processed = (int) $run->fields['processed'] + $batch['processed'];
+    $created = (int) $run->fields['created'] + $batch['created'];
+    $updated = (int) $run->fields['updated'] + $batch['updated'];
+    $failed = (int) $run->fields['failed'] + $batch['failed'];
+    $done = $csv_batch['done'];
+    $run->getFromDB($run_id);
+    $cancelled = ($run->fields['status'] ?? null) === 'cancelled';
+    $total = ($done || $cancelled) ? $processed : 0;
     $run->update([
         'id' => $run_id,
         'processed' => $processed,
-        'created' => (int) $run->fields['created'] + $batch['created'],
-        'updated' => (int) $run->fields['updated'] + $batch['updated'],
-        'failed' => (int) $run->fields['failed'] + $batch['failed'],
-        'status' => $done ? 'completed' : 'running',
+        'total' => $total,
+        'csv_offset' => $csv_batch['byte_offset'],
+        'csv_line' => $csv_batch['physical_line'],
+        'created' => $created,
+        'updated' => $updated,
+        'failed' => $failed,
+        'status' => $cancelled ? 'cancelled' : ($done ? 'completed' : 'running'),
     ]);
 
     echo json_encode([
         'offset' => $processed,
         'processed' => $processed,
-        'total' => (int) $run->fields['total'],
-        'progress' => (int) $run->fields['total'] > 0 ? round(($processed / (int) $run->fields['total']) * 100, 1) : 100,
-        'created' => (int) $run->fields['created'] + $batch['created'],
-        'updated' => (int) $run->fields['updated'] + $batch['updated'],
-        'failed' => (int) $run->fields['failed'] + $batch['failed'],
-        'done' => $done,
+        'total' => $total,
+        'progress' => $done ? 100 : 0,
+        'created' => $created,
+        'updated' => $updated,
+        'failed' => $failed,
+        'done' => $done || $cancelled,
+        'cancelled' => $cancelled,
     ], JSON_THROW_ON_ERROR);
 } catch (Throwable $exception) {
     if (isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {

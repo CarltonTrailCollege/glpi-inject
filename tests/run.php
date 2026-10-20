@@ -224,6 +224,22 @@ namespace {
     assert($automatic_encoding_preview['records'][0]['values'][0] === "Caf\xC3\xA9 laptop");
     unlink($automatic_encoding_path);
 
+    $cursor_path = __DIR__ . '/fixtures/glpiinject/cursor.csv';
+    file_put_contents($cursor_path, "Name,Code\nFirst,1\nSecond,2\n");
+    $cursor_model = $model;
+    $cursor_model['csv_file'] = 'cursor.csv';
+    $cursor_model['has_header'] = 1;
+    $cursor_first = $service->readBatch($cursor_model, 0, 0, 1);
+    assert($cursor_first['rows'][0][1] === ['First', '1']);
+    assert($cursor_first['done'] === false);
+    $cursor_second = $service->readBatch($cursor_model, $cursor_first['byte_offset'], $cursor_first['physical_line'], 1);
+    assert($cursor_second['rows'][0][1] === ['Second', '2']);
+    assert($cursor_second['byte_offset'] > $cursor_first['byte_offset']);
+    $cursor_end = $service->readBatch($cursor_model, $cursor_second['byte_offset'], $cursor_second['physical_line'], 1);
+    assert($cursor_end['rows'] === []);
+    assert($cursor_end['done'] === true);
+    unlink($cursor_path);
+
     $related_path = __DIR__ . '/fixtures/glpiinject/related.csv';
     file_put_contents($related_path, "Laptop D,Acme,Fourth row\nLaptop E,,Fifth row\n");
     $related_model = $model;
@@ -351,5 +367,31 @@ namespace {
     assert($staged_batch['rows'][1]['line'] === 3);
     assert(TestAsset::$records[2]['custom_inventory_code'] === 'CTC-002');
 
-    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, and staged batch checks passed.\n";
+    $stream_path = __DIR__ . '/fixtures/glpiinject/streamed-import.csv';
+    file_put_contents($stream_path, "Name,Inventory code,Comment\nStream A,STR-001,First\nStream B,STR-002,Second\n");
+    TestAsset::$records = [];
+    $stream_model = $batch_model;
+    $stream_model['csv_file'] = 'streamed-import.csv';
+    $stream_model['has_header'] = 1;
+    $cursor_offset = 0;
+    $cursor_line = 0;
+    for ($expected = 1; $expected <= 2; $expected++) {
+        $stream_batch = $service->readBatch($stream_model, $cursor_offset, $cursor_line, 1);
+        assert(count($stream_batch['rows']) === 1);
+        $stream_result = $service->processStagedBatch($stream_model, $target, array_map(
+            static fn(array $row) => ['line' => $row[0], 'row' => $row[1]],
+            $stream_batch['rows']
+        ));
+        assert($stream_result['created'] === 1);
+        $cursor_offset = $stream_batch['byte_offset'];
+        $cursor_line = $stream_batch['physical_line'];
+    }
+    $stream_end = $service->readBatch($stream_model, $cursor_offset, $cursor_line, 1);
+    assert($stream_end['rows'] === []);
+    assert($stream_end['done'] === true);
+    assert(TestAsset::$records[1]['name'] === 'Stream A');
+    assert(TestAsset::$records[2]['custom_inventory_code'] === 'STR-002');
+    unlink($stream_path);
+
+    echo "CSV preview, custom-field mapping, linked-item resolution, Infocom create/update, mandatory checks, date/number/boolean conversion, create/update, staged batches, and cursor-streamed imports passed.\n";
 }

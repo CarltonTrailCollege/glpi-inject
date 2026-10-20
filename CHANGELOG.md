@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.15] - 2026-10-20
+
+### Changed
+
+- Start imports without synchronously scanning and staging the complete CSV; stream rows through cancellable progress batches.
+- Show indeterminate progress until the CSV end establishes the final total, and report cancelled runs distinctly.
+
 ## [0.1.0-alpha.14] - 2026-10-20
 
 ### Changed

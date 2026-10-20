@@ -98,15 +98,22 @@
             {% if selected_run and selected_run.status == 'running' %}
                 <section class="border rounded p-3 mb-3" id="import-progress" data-batch-url="{{ batch_url }}" data-run-id="{{ selected_run.id }}" data-offset="{{ selected_run.processed }}" data-total="{{ selected_run.total }}" data-csrf-token="{{ csrf_token }}">
                     <div class="hr-text mb-3"><i class="ti ti-chart-bar"></i><span>{{ __('Import progress', 'glpiinject') }}</span></div>
-                    <div class="progress" role="progressbar" aria-label="{{ __('Injection of the file', 'glpiinject') }}" aria-valuenow="{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}%">{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 100 }}%</div>
+                    <div class="progress" role="progressbar" aria-label="{{ __('Injection of the file', 'glpiinject') }}" aria-valuenow="{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 0 }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated {{ selected_run.total ? '' : 'progress-bar-indeterminate' }}" style="width: {{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round : 30 }}%">{{ selected_run.total ? (selected_run.processed / selected_run.total * 100)|round ~ '%' : '' }}</div>
                     </div>
-                    <p class="text-muted text-center mt-2" data-progress-status>{{ __('Injection of the file', 'glpiinject') }}: {{ selected_run.processed }} / {{ selected_run.total }} {{ __('lines', 'glpiinject') }}</p>
+                    <p class="text-muted text-center mt-2" data-progress-status>{% if selected_run.total %}{{ __('Injection of the file', 'glpiinject') }}: {{ selected_run.processed }} / {{ selected_run.total }} {{ __('lines', 'glpiinject') }}{% else %}{{ __('Processed rows', 'glpiinject') }}: {{ selected_run.processed }}{% endif %}</p>
+                    <button class="btn btn-outline-danger" type="button" data-cancel-import><i class="ti ti-player-stop" aria-hidden="true"></i> {{ __('Cancel import', 'glpiinject') }}</button>
                     <div class="alert alert-danger d-none" data-progress-error role="alert"></div>
                 </section>
             {% endif %}
 
-            {% if import_results and import_results.status != 'running' %}
+            {% if import_results and import_results.status == 'cancelled' %}
+                <section class="border rounded p-3">
+                    <div class="hr-text mb-3"><i class="ti ti-player-stop text-warning"></i><span>{{ __('Import cancelled', 'glpiinject') }}</span></div>
+                    <p class="text-center">{{ __('Processed', 'glpiinject') }}: {{ import_results.processed }} · {{ __('Created', 'glpiinject') }}: {{ import_results.created }} · {{ __('Updated', 'glpiinject') }}: {{ import_results.updated }} · {{ __('Failed', 'glpiinject') }}: {{ import_results.failed }}</p>
+                    <a class="btn btn-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php">{{ __('Finish', 'glpiinject') }}</a>
+                </section>
+            {% elseif import_results and import_results.status != 'running' %}
                 <section class="border rounded p-3"><div class="hr-text mb-3"><i class="ti ti-chart-bar"></i><span>{{ __('Injection results', 'glpiinject') }}</span></div><p class="text-center fs-5">{% if import_results.failed == 0 %}<i class="ti ti-check text-success"></i> {{ __('Injection successful', 'glpiinject') }}{% else %}<i class="ti ti-alert-triangle text-danger"></i> {{ __('Injection encounters errors', 'glpiinject') }}{% endif %}</p><p class="text-center">{{ __('Status', 'glpiinject') }}: {{ import_results.status }} · {{ __('Processed', 'glpiinject') }}: {{ import_results.processed }} / {{ import_results.total }}</p><p class="text-center">{{ __('Created', 'glpiinject') }}: {{ import_results.created }} · {{ __('Updated', 'glpiinject') }}: {{ import_results.updated }} · {{ __('Failed', 'glpiinject') }}: {{ import_results.failed }}</p><div class="table-responsive"><table class="table table-sm"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th><th>{{ __('Result', 'glpiinject') }}</th><th>{{ __('Details', 'glpiinject') }}</th></tr></thead><tbody>{% for row in import_results.rows %}<tr><td>{{ row.line }}</td><td>{{ row.status }}</td><td>{{ row.message ?? '' }}</td></tr>{% endfor %}</tbody></table></div><div class="d-flex justify-content-center gap-2">{% if import_results.failed > 0 and selected_run %}<a class="btn btn-outline-danger" href="{{ root_doc }}/plugins/glpiinject/front/export_errors.php?run={{ selected_run.id }}"><i class="ti ti-file-type-csv"></i> {{ __('Export the log', 'glpiinject') }}</a>{% endif %}<a class="btn btn-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php">{{ __('Finish', 'glpiinject') }}</a></div></section>
             {% endif %}
         {% else %}
@@ -135,10 +142,50 @@ if (progress) {
     const progressTrack = progress.querySelector('.progress');
     const status = progress.querySelector('[data-progress-status]');
     const error = progress.querySelector('[data-progress-error]');
+    const cancelButton = progress.querySelector('[data-cancel-import]');
     let offset = Number(progress.dataset.offset || 0);
-    const total = Number(progress.dataset.total || 0);
+    let total = Number(progress.dataset.total || 0);
+    let cancelled = false;
+    let activeBatch = null;
+
+    cancelButton.addEventListener('click', async () => {
+        if (cancelled) return;
+        cancelled = true;
+        cancelButton.disabled = true;
+        status.textContent = '{{ __('Cancelling after the current batch...', 'glpiinject')|e('js') }}';
+        const body = new URLSearchParams({
+            action: 'cancel',
+            run_id: progress.dataset.runId,
+            _glpi_csrf_token: progress.dataset.csrfToken,
+        });
+        try {
+            const response = await fetch(progress.dataset.batchUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body,
+                credentials: 'same-origin',
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || '{{ __('Unable to cancel the import.', 'glpiinject')|e('js') }}');
+            offset = result.processed;
+            const percent = total ? Math.min(100, Math.round((offset / total) * 100)) : 100;
+            progressBar.style.width = `${percent}%`;
+            progressBar.textContent = `${percent}%`;
+            progressTrack.setAttribute('aria-valuenow', String(percent));
+            progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+            status.textContent = '{{ __('Import cancelled after the current batch.', 'glpiinject')|e('js') }}';
+            if (activeBatch) await activeBatch;
+            window.location.reload();
+        } catch (exception) {
+            cancelled = false;
+            cancelButton.disabled = false;
+            error.textContent = exception.message;
+            error.classList.remove('d-none');
+        }
+    });
 
     const processBatch = async () => {
+        if (cancelled) return;
         const body = new URLSearchParams({
             run_id: progress.dataset.runId,
             offset: String(offset),
@@ -157,17 +204,28 @@ if (progress) {
                 throw new Error(result.error || '{{ __('The import batch failed.', 'glpiinject')|e('js') }}');
             }
             offset = result.offset;
-            const percent = Math.min(100, Number(result.progress || 0));
+            total = Number(result.total || 0);
+            if (result.cancelled) {
+                cancelled = true;
+                window.location.reload();
+                return;
+            }
+            const percent = result.done ? 100 : (result.total ? Math.min(100, Number(result.progress || 0)) : 30);
             progressBar.style.width = `${percent}%`;
-            progressBar.textContent = `${percent}%`;
+            progressBar.textContent = result.done ? '100%' : (result.total ? `${percent}%` : '');
+            progressBar.classList.toggle('progress-bar-indeterminate', !result.done && !result.total);
             progressTrack.setAttribute('aria-valuenow', String(percent));
-            status.textContent = `{{ __('Injection of the file', 'glpiinject')|e('js') }}: ${result.processed} / ${result.total} {{ __('lines', 'glpiinject')|e('js') }}`;
+            status.textContent = result.total
+                ? `{{ __('Injection of the file', 'glpiinject')|e('js') }}: ${result.processed} / ${result.total} {{ __('lines', 'glpiinject')|e('js') }}`
+                : `{{ __('Processed rows', 'glpiinject')|e('js') }}: ${result.processed}`;
             if (result.done) {
                 progressBar.classList.remove('progress-bar-animated');
                 window.location.reload();
                 return;
             }
-            window.setTimeout(processBatch, 80);
+            window.setTimeout(() => {
+                activeBatch = processBatch();
+            }, 80);
         } catch (exception) {
             error.textContent = exception.message;
             error.classList.remove('d-none');
@@ -175,8 +233,8 @@ if (progress) {
         }
     };
 
-    if (offset < total) {
-        processBatch();
+    if (!total || offset < total) {
+        activeBatch = processBatch();
     }
 }
 </script>

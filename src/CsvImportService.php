@@ -80,6 +80,78 @@ final class CsvImportService
         return $this->readRows($model);
     }
 
+    public function readBatch(array $model, int $byte_offset, int $physical_line, int $batch_size): array
+    {
+        $filename = (string) ($model['csv_file'] ?? '');
+        if ($filename === '' || basename($filename) !== $filename) {
+            throw new RuntimeException(__('The model has no valid CSV file.', 'glpiinject'));
+        }
+
+        $path = PLUGIN_GLPIINJECT_UPLOAD_DIR . '/' . $filename;
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            throw new RuntimeException(__('The CSV file could not be opened.', 'glpiinject'));
+        }
+
+        try {
+            $encoding = $this->detectEncoding($handle, (string) ($model['file_encoding'] ?? 'Automatic'));
+            if ($byte_offset === 0) {
+                if ((int) $model['has_header'] === 1) {
+                    fgetcsv($handle, null, $model['delimiter'], '"', '\\');
+                    $physical_line++;
+                    $byte_offset = ftell($handle);
+                }
+            } elseif (fseek($handle, $byte_offset) !== 0) {
+                throw new RuntimeException(__('The CSV read position is invalid.', 'glpiinject'));
+            }
+
+            $rows = [];
+            $done = false;
+            while (count($rows) < $batch_size) {
+                $row = fgetcsv($handle, null, $model['delimiter'], '"', '\\');
+                if ($row === false) {
+                    $done = true;
+                    break;
+                }
+
+                $physical_line++;
+                $next_offset = ftell($handle);
+                if ($next_offset === false) {
+                    throw new RuntimeException(__('The CSV read position could not be determined.', 'glpiinject'));
+                }
+                if ($byte_offset === 0 && isset($row[0])) {
+                    $row[0] = preg_replace('/^\\xEF\\xBB\\xBF/', '', (string) $row[0]);
+                }
+                $byte_offset = $next_offset;
+
+                $row = array_map(function ($value) use ($encoding) {
+                    if ($value === null || $encoding === 'UTF-8') {
+                        return $value;
+                    }
+                    $converted = iconv($encoding, 'UTF-8', (string) $value);
+                    if ($converted === false) {
+                        throw new RuntimeException(__('A CSV value could not be converted to UTF-8.', 'glpiinject'));
+                    }
+                    return $converted;
+                }, $row);
+
+                if ($row === [null] || count(array_filter($row, static fn($value) => trim((string) $value) !== '')) === 0) {
+                    continue;
+                }
+                $rows[] = [$physical_line, $row, []];
+            }
+
+            return [
+                'rows' => $rows,
+                'byte_offset' => $byte_offset,
+                'physical_line' => $physical_line,
+                'done' => $done,
+            ];
+        } finally {
+            fclose($handle);
+        }
+    }
+
     public function processStagedBatch(array $model, array $target, array $staged_rows): array
     {
         $rows = [];
@@ -496,5 +568,27 @@ final class CsvImportService
         } finally {
             fclose($handle);
         }
+    }
+
+    private function detectEncoding($handle, string $requested): string
+    {
+        if ($requested !== 'Automatic') {
+            return $requested;
+        }
+
+        $sample = fread($handle, 65536);
+        if ($sample === false) {
+            throw new RuntimeException(__('The CSV file could not be read.', 'glpiinject'));
+        }
+        rewind($handle);
+        if (str_starts_with($sample, "\xEF\xBB\xBF")) {
+            return 'UTF-8';
+        }
+        for ($trim = 0; $trim <= 4 && strlen($sample) >= $trim; $trim++) {
+            if (preg_match('//u', $trim === 0 ? $sample : substr($sample, 0, -$trim)) === 1) {
+                return 'UTF-8';
+            }
+        }
+        return 'Windows-1252';
     }
 }
