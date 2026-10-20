@@ -26,7 +26,7 @@
             {% else %}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th style="width: 2.5rem;"><span class="visually-hidden">{{ __('Select') }}</span></th><th>{{ __('Name') }}</th><th>{{ __('Asset type', 'glpiinject') }}</th><th>{{ __('CSV', 'glpiinject') }}</th></tr></thead>
+                        <thead><tr><th style="width: 2.5rem;"><span class="visually-hidden">{{ __('Select') }}</span></th><th>{{ __('Name') }}</th><th>{{ __('Asset type', 'glpiinject') }}</th><th>{{ __('CSV', 'glpiinject') }}</th><th><span class="visually-hidden">{{ __('Selection', 'glpiinject') }}</span></th></tr></thead>
                         <tbody>
                             {% for model in models %}
                                 <tr>
@@ -34,6 +34,7 @@
                                     <th scope="row"><label class="mb-0" for="available-model-{{ model.id }}">{{ model.name }}</label></th>
                                     <td>{{ targets[model.itemtype].label ?? model.itemtype }}</td>
                                     <td>{% if model.csv_file %}<span class="badge bg-success text-dark fw-semibold px-3 py-2">{{ __('Loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Not loaded', 'glpiinject') }}</span>{% endif %}</td>
+                                    <td class="text-end" aria-live="polite"><span class="badge bg-info text-dark fw-semibold px-3 py-2 {{ edit_model and edit_model.id == model.id ? '' : 'invisible' }}" data-model-selected="{{ model.id }}"><i class="ti ti-check" aria-hidden="true"></i> {{ __('Selected', 'glpiinject') }}</span></td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -101,7 +102,17 @@ const selectedModel = () => {
     selectionError.classList.toggle('d-none', selected !== null);
     return selected;
 };
-modelActions.addEventListener('change', () => selectionError.classList.add('d-none'));
+const updateSelectionIndicators = () => {
+    const selected = modelActions.querySelector('input[name="id"]:checked');
+    modelActions.querySelectorAll('[data-model-selected]').forEach((indicator) => {
+        indicator.classList.toggle('invisible', indicator.dataset.modelSelected !== selected?.value);
+    });
+};
+modelActions.addEventListener('change', () => {
+    selectionError.classList.add('d-none');
+    updateSelectionIndicators();
+});
+updateSelectionIndicators();
 modelActions.querySelectorAll('[data-model-action]').forEach((button) => {
     button.addEventListener('click', () => {
         const selected = selectedModel();
