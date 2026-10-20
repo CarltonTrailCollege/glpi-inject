@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.26] - 2026-10-20
+
+### Fixed
+
+- Rotate GLPI's one-use CSRF token between import batches and serialize cancellation after an active batch to prevent subsequent batch requests from being rejected with HTTP 403.
+
 ## [0.1.0-alpha.25] - 2026-10-20
 
 ### Fixed

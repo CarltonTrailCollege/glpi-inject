@@ -15,6 +15,7 @@ global $DB;
 try {
     Session::checkRight('config', UPDATE);
     $current_user_id = (int) Session::getLoginUserID();
+    $next_csrf_token = Session::getNewCSRFToken();
     Session::writeClose();
 
     $run_id = (int) ($_POST['run_id'] ?? 0);
@@ -40,6 +41,7 @@ try {
             $run->getFromDB($run_id);
         }
         echo json_encode([
+            'csrf_token' => $next_csrf_token,
             'offset' => (int) $run->fields['processed'],
             'processed' => (int) $run->fields['processed'],
             'total' => (int) $run->fields['total'],
@@ -55,6 +57,7 @@ try {
 
     if (($run->fields['status'] ?? null) === 'cancelled') {
         echo json_encode([
+            'csrf_token' => $next_csrf_token,
             'offset' => (int) $run->fields['processed'],
             'processed' => (int) $run->fields['processed'],
             'total' => (int) $run->fields['total'],
@@ -138,6 +141,7 @@ try {
     ]);
 
     echo json_encode([
+        'csrf_token' => $next_csrf_token,
         'offset' => $processed,
         'processed' => $processed,
         'total' => $total,
@@ -170,5 +174,8 @@ try {
         ]);
     }
     http_response_code(400);
-    echo json_encode(['error' => $exception->getMessage()], JSON_THROW_ON_ERROR);
+    echo json_encode([
+        'error' => $exception->getMessage(),
+        'csrf_token' => $next_csrf_token ?? null,
+    ], JSON_THROW_ON_ERROR);
 }

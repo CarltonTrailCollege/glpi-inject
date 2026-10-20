@@ -171,12 +171,13 @@ if (progress) {
             pendingBatchTimer = null;
         }
         status.textContent = '{{ __('Cancelling after the current batch...', 'glpiinject')|e('js') }}';
-        const body = new URLSearchParams({
-            action: 'cancel',
-            run_id: progress.dataset.runId,
-            _glpi_csrf_token: progress.dataset.csrfToken,
-        });
         try {
+            if (activeBatch !== null) await activeBatch;
+            const body = new URLSearchParams({
+                action: 'cancel',
+                run_id: progress.dataset.runId,
+                _glpi_csrf_token: progress.dataset.csrfToken,
+            });
             const response = await fetch(progress.dataset.batchUrl, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -190,6 +191,9 @@ if (progress) {
             } catch (_) {
                 const preview = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
                 throw new Error(`{{ __('Batch request returned non-JSON response.', 'glpiinject')|e('js') }} HTTP ${response.status}: ${preview || response.statusText}`);
+            }
+            if (typeof result.csrf_token === 'string' && result.csrf_token !== '') {
+                progress.dataset.csrfToken = result.csrf_token;
             }
             if (!response.ok) throw new Error(result.error || '{{ __('Unable to cancel the import.', 'glpiinject')|e('js') }}');
             offset = result.processed;
@@ -231,6 +235,9 @@ if (progress) {
             } catch (_) {
                 const preview = responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
                 throw new Error(`{{ __('Batch request returned non-JSON response.', 'glpiinject')|e('js') }} HTTP ${response.status}: ${preview || response.statusText}`);
+            }
+            if (typeof result.csrf_token === 'string' && result.csrf_token !== '') {
+                progress.dataset.csrfToken = result.csrf_token;
             }
             if (!response.ok) {
                 throw new Error(result.error || '{{ __('The import batch failed.', 'glpiinject')|e('js') }}');
