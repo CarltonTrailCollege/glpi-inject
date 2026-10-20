@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.11] - 2026-10-20
+
+### Fixed
+
+- Improve contrast and spacing for the loaded CSV status badges.
+
 ## [0.1.0-alpha.10] - 2026-10-20
 
 ### Added

@@ -20,7 +20,7 @@
                                 <tr>
                                     <th scope="row">{{ model.name }}</th>
                                     <td>{{ targets[model.itemtype].label ?? model.itemtype }}</td>
-                                    <td>{% if model.csv_file %}<span class="badge bg-success">{{ __('Loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Not loaded', 'glpiinject') }}</span>{% endif %}</td>
+                                    <td>{% if model.csv_file %}<span class="badge bg-success text-dark fw-semibold px-3 py-2">{{ __('Loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Not loaded', 'glpiinject') }}</span>{% endif %}</td>
                                     <td class="text-end"><div class="d-inline-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="?edit={{ model.id }}">{{ __('Edit') }}</a><a class="btn btn-sm btn-outline-primary" href="{{ root_doc }}/plugins/glpiinject/front/index.php?id={{ model.id }}">{{ __('Use model', 'glpiinject') }}</a><form method="post" onsubmit="return confirm('{{ __('Delete this model?', 'glpiinject')|e('js') }}');"><input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ model.id }}"><button class="btn btn-sm btn-outline-danger" type="submit" aria-label="{{ __('Delete') }}"><i class="ti ti-trash"></i></button></form></div></td>
                                 </tr>
                             {% endfor %}
