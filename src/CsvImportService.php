@@ -349,6 +349,13 @@ final class CsvImportService
                  ? getEntitiesRestrictCriteria($related_item::getTable(), '', (int) $model['entities_id'], true)
                  : [];
              $related_found = $related_item->getFromDBByCrit([$mapping['field'] => $value] + $entity_criteria);
+             if (!$related_found && $related_itemtype === \User::class && $mapping['field'] === 'name' && (int) ($model['user_fullname_fallback'] ?? 0) === 1) {
+                 $matched_user = $this->findUserByFullName($value);
+                 if ($matched_user !== null) {
+                     $related_item = $matched_user;
+                     $related_found = true;
+                 }
+             }
             if (!$related_found && $related_item instanceof CommonTreeDropdown && $mapping['field'] !== 'completename') {
                 $related_found = $related_item->getFromDBByCrit(['completename' => $value] + $entity_criteria);
             }
@@ -408,6 +415,37 @@ final class CsvImportService
       }
 
        return $values;
+   }
+
+   private function findUserByFullName(string $value): ?\User {
+       global $DB;
+
+       $parts = preg_split('/\s+/u', trim($value));
+       if ($parts === false || count($parts) < 2) {
+           return null;
+       }
+       $alternatives = [];
+       for ($boundary = 1; $boundary < count($parts); $boundary++) {
+           $alternatives[] = [
+               'firstname' => implode(' ', array_slice($parts, 0, $boundary)),
+               'realname' => implode(' ', array_slice($parts, $boundary)),
+           ];
+       }
+       $matches = [];
+       foreach ($DB->request([
+           'SELECT' => ['id'],
+           'FROM' => \User::getTable(),
+           'WHERE' => ['is_deleted' => 0, 'OR' => $alternatives],
+       ]) as $row) {
+           $candidate = new \User();
+           if ($candidate->getFromDB((int) $row['id']) && $candidate->canViewItem()) {
+               $matches[$candidate->getID()] = $candidate;
+               if (count($matches) > 1) {
+                   throw new \RuntimeException(__('Multiple accessible users match this full name. Use the GLPI username instead.', 'glpiinject'));
+               }
+           }
+       }
+       return $matches === [] ? null : reset($matches);
    }
 
    private function saveInfocom(string $itemtype, int $items_id, array $values): void {

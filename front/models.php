@@ -76,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            'behavior_add' => isset($_POST['behavior_add']) ? 1 : 0,
            'behavior_update' => isset($_POST['behavior_update']) ? 1 : 0,
            'can_add_dropdown' => isset($_POST['can_add_dropdown']) ? 1 : 0,
+           'user_fullname_fallback' => isset($_POST['user_fullname_fallback']) ? 1 : 0,
            'delimiter' => $delimiter,
            'has_header' => isset($_POST['has_header']) ? 1 : 0,
            'date_format' => $date_format,

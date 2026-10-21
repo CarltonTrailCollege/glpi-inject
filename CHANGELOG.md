@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-beta.4] - 2026-10-21
+
+### Added
+
+- Add an opt-in Advanced model setting for exact first-name/last-name User matching when no username matches, shared by preview and import.
+- Preserve username precedence, support compound names, require unique readable non-deleted full-name matches, and never create user accounts.
+- Migrate existing models with fallback disabled and add resolver regressions for ambiguity, permissions, missing/deleted users, and preview behavior.
+
 ## [0.1.0-beta.3] - 2026-10-21
 
 ### Added

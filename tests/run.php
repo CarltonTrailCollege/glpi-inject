@@ -97,6 +97,53 @@ namespace {
         }
     }
 
+    final class User extends CommonDBTM
+    {
+        public static array $records = [];
+
+        public function getFromDB(int $id): bool
+        {
+            if (!isset(self::$records[$id])) {
+                return false;
+            }
+            $this->fields = ['id' => $id] + self::$records[$id];
+            return true;
+        }
+
+        public function canViewItem(): bool
+        {
+            return (bool) ($this->fields['readable'] ?? true);
+        }
+
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'User';
+        }
+    }
+
+    final class TestUserDatabase
+    {
+        public int $requests = 0;
+
+        public function request(array $query): iterable
+        {
+            $this->requests++;
+            assert($query['FROM'] === User::getTable());
+            assert($query['WHERE']['is_deleted'] === 0);
+            foreach (User::$records as $id => $record) {
+                if (!empty($record['is_deleted'])) {
+                    continue;
+                }
+                foreach ($query['WHERE']['OR'] as $criteria) {
+                    if ($criteria['firstname'] === $record['firstname'] && $criteria['realname'] === $record['realname']) {
+                        yield ['id' => $id];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     class CommonDropdown extends CommonDBTM
     {
         public static function getNameField(): string
@@ -767,6 +814,67 @@ namespace {
     assert($denied_budget['failed'] === 1);
     assert(count(Budget::$records) === 3);
     Budget::$allow_item_write = true;
+
+    $DB = new TestUserDatabase();
+    User::$records = [
+        1 => ['name' => 'afolden', 'firstname' => 'Alicia', 'realname' => 'Folden'],
+        2 => ['name' => 'maryjane', 'firstname' => 'Mary Jane', 'realname' => 'Van Dyke'],
+        3 => ['name' => 'hidden', 'firstname' => 'Hidden', 'realname' => 'User', 'readable' => false],
+        4 => ['name' => 'deleted', 'firstname' => 'Deleted', 'realname' => 'User', 'is_deleted' => 1],
+    ];
+    $user_model = $model;
+    $user_model['mappings'] = [
+        0 => ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name'],
+        1 => ['itemtype' => User::class, 'field' => 'name', 'linkfield' => 'users_id'],
+    ];
+    $user_model['can_add_dropdown'] = 1;
+    $user_target = $target;
+    $user_target['mapping_options'][] = [
+        'itemtype' => User::class, 'field' => 'name', 'linkfield' => 'users_id',
+        'label' => 'User -> Username', 'is_relation' => true,
+    ];
+    $username_only = $service->processStagedBatch($user_model, $user_target, [
+        ['line' => 2, 'row' => ['Username asset', 'afolden']],
+        ['line' => 3, 'row' => ['Disabled fallback asset', 'Alicia Folden']],
+    ]);
+    assert($username_only['created'] === 1);
+    assert($username_only['failed'] === 1);
+    assert($DB->requests === 0);
+    $user_model['user_fullname_fallback'] = 1;
+    $fullnames = $service->processStagedBatch($user_model, $user_target, [
+        ['line' => 4, 'row' => ['Full name asset', 'Alicia Folden']],
+        ['line' => 5, 'row' => ['Compound name asset', 'Mary   Jane Van Dyke']],
+        ['line' => 6, 'row' => ['Hidden user asset', 'Hidden User']],
+        ['line' => 7, 'row' => ['Deleted user asset', 'Deleted User']],
+        ['line' => 8, 'row' => ['Missing user asset', 'Missing Person']],
+    ]);
+    assert($fullnames['created'] === 2);
+    assert($fullnames['failed'] === 3);
+    assert(TestAsset::$records[$fullnames['rows'][0]['items_id']]['users_id'] === 1);
+    assert(TestAsset::$records[$fullnames['rows'][1]['items_id']]['users_id'] === 2);
+    $user_path = __DIR__ . '/fixtures/glpiinject/user-preview.csv';
+    file_put_contents($user_path, "Name,Owner\nPreview user,Alicia Folden\n");
+    $user_model['csv_file'] = 'user-preview.csv';
+    $user_model['has_header'] = 1;
+    assert($service->preview($user_model, $user_target)['records'][0]['valid']);
+    User::$records[5] = ['name' => 'afolden2', 'firstname' => 'Alicia', 'realname' => 'Folden'];
+    $ambiguous_preview = $service->preview($user_model, $user_target);
+    assert(!$ambiguous_preview['records'][0]['valid']);
+    assert(str_contains($ambiguous_preview['records'][0]['errors'][0], 'Multiple accessible users'));
+    $ambiguous_import = $service->processStagedBatch($user_model, $user_target, [
+        ['line' => 9, 'row' => ['Ambiguous user asset', 'Alicia Folden']],
+    ]);
+    assert($ambiguous_import['failed'] === 1);
+    User::$records[6] = ['name' => 'Alicia Folden', 'firstname' => 'Other', 'realname' => 'Person'];
+    $queries_before_username = $DB->requests;
+    $username_priority = $service->processStagedBatch($user_model, $user_target, [
+        ['line' => 10, 'row' => ['Username priority asset', 'Alicia Folden']],
+    ]);
+    assert($username_priority['created'] === 1);
+    assert(TestAsset::$records[$username_priority['rows'][0]['items_id']]['users_id'] === 6);
+    assert($DB->requests === $queries_before_username);
+    assert(count(User::$records) === 6);
+    unlink($user_path);
 
     $preview_size_path = __DIR__ . '/fixtures/glpiinject/preview-size.csv';
     file_put_contents($preview_size_path, "Name\n" . str_repeat("Preview asset\n", 10001));
