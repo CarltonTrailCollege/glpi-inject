@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.5] - 2026-10-21
+
+### Added
+
+- Add a Preview Columns menu with individual checkboxes and Show all/Hide all controls, keeping Line and Validation visible.
+- Remember column visibility per model in browser-tab storage, reset for changed headers, and leave mappings and imports unchanged.
+
 ## [0.1.0-beta.4] - 2026-10-21
 
 ### Added

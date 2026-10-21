@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-beta.4` (beta; some integration coverage and import-reliability hardening remain planned).
+**Current release:** `0.1.0-beta.5` (beta; some integration coverage and import-reliability hardening remain planned).
 
 See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
 
@@ -28,6 +28,8 @@ This is an in-process GLPI plugin. It does not require an external REST API toke
 5. Run the import and review per-row success and error results.
 
 Preview Result Size supports 1, 10, 50, 100, 500, 1000, or 10000 rows (default 10), remembered for the current session. Changing the selection refreshes preview only; imports still process the full CSV. Large previews may take longer to validate and render.
+
+The Preview Columns menu shows or hides individual CSV columns, with Show all and Hide all actions. Line and Validation remain visible. Preferences are remembered per model in the current browser tab when storage is available, and reset when CSV headers change. Column visibility never changes mappings or imported data.
 
 Financial and administrative mappings include Budget and Supplier by name. Their IDs are saved on the asset's Infocom record, independently of any asset-level supplier mapping. Existing accessible values are reused; missing Budget and Supplier records may be created when Allow creation of dropdowns is enabled and GLPI permissions allow it. Preview never creates these records.
 
@@ -101,4 +103,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.4`; the matching GitHub tag is `v0.1.0-beta.4`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.5`; the matching GitHub tag is `v0.1.0-beta.5`.

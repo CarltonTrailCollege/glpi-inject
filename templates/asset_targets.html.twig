@@ -119,12 +119,21 @@
                             <select class="form-select w-auto" id="preview-size" name="preview_size" onchange="this.form.requestSubmit(this.form.querySelector('[value=preview]'));">
                                 {% for size in preview_sizes %}<option value="{{ size }}" {{ preview_size == size ? 'selected' : '' }}>{{ size }}</option>{% endfor %}
                             </select>
+                            <div class="dropdown" id="preview-columns" data-model-id="{{ model.id }}">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="ti ti-columns" aria-hidden="true"></i> {{ __('Columns', 'glpiinject') }}</button>
+                                <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 16rem; max-width: min(24rem, 90vw); max-height: 24rem; overflow-y: auto;">
+                                    <div class="d-flex flex-wrap gap-2 mb-2"><button class="btn btn-sm btn-outline-secondary" type="button" data-preview-columns-all>{{ __('Show all', 'glpiinject') }}</button><button class="btn btn-sm btn-outline-secondary" type="button" data-preview-columns-none>{{ __('Hide all', 'glpiinject') }}</button></div>
+                                    {% for header in preview.headers %}
+                                        <label class="form-check mb-2"><input class="form-check-input" type="checkbox" value="{{ loop.index0 }}" data-preview-column-toggle checked><span class="form-check-label text-break">{{ header }}</span></label>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             <button class="btn btn-outline-secondary" name="action" value="preview" type="submit">{{ __('Refresh preview', 'glpiinject') }}</button>
                             <button class="btn btn-success" name="action" value="run_import" type="submit" onclick="return window.confirm({{ __('Watch out, you are about to inject data into GLPI. Are you sure you want to do it?', 'glpiinject')|json_encode }});" {{ model.mappings is empty ? 'disabled' : '' }}>{{ __('Launch the import', 'glpiinject') }}</button>
                         </form>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th>{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
-                        {% for record in preview.records %}<tr><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td aria-label="{{ header }}">{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}<td>{% if record.valid %}<span class="badge bg-success">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger">{{ record.errors|join('; ') }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="20" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
+                    <div class="table-responsive"><table class="table table-sm table-striped" id="preview-table"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th data-preview-column="{{ loop.index0 }}">{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
+                        {% for record in preview.records %}<tr><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td data-preview-column="{{ loop.index0 }}" aria-label="{{ header }}">{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}<td>{% if record.valid %}<span class="badge bg-success">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger">{{ record.errors|join('; ') }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="{{ preview.headers|length + 2 }}" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
                     </tbody></table></div>
                 </section>
             {% endif %}
@@ -145,6 +154,38 @@
 </div>
 
 <script>
+const previewColumns = document.getElementById('preview-columns');
+if (previewColumns) {
+    const toggles = Array.from(previewColumns.querySelectorAll('[data-preview-column-toggle]'));
+    const headers = Array.from(document.querySelectorAll('#preview-table thead [data-preview-column]'), (header) => header.textContent);
+    const storageKey = `glpiinject-preview-columns:${window.location.pathname}:${previewColumns.dataset.modelId}`;
+    const columnStyle = document.createElement('style');
+    document.head.appendChild(columnStyle);
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(storageKey));
+        if (saved && JSON.stringify(saved.headers) === JSON.stringify(headers) && Array.isArray(saved.hidden)) {
+            toggles.forEach((toggle) => { toggle.checked = !saved.hidden.includes(Number(toggle.value)); });
+        }
+    } catch (_) {}
+    const updatePreviewColumns = () => {
+        const hidden = toggles.filter((toggle) => !toggle.checked).map((toggle) => Number(toggle.value));
+        columnStyle.textContent = hidden.map((column) => `#preview-table [data-preview-column="${column}"] { display: none; }`).join('\n');
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify({headers, hidden}));
+        } catch (_) {}
+    };
+    previewColumns.addEventListener('change', updatePreviewColumns);
+    previewColumns.querySelector('[data-preview-columns-all]').addEventListener('click', () => {
+        toggles.forEach((toggle) => { toggle.checked = true; });
+        updatePreviewColumns();
+    });
+    previewColumns.querySelector('[data-preview-columns-none]').addEventListener('click', () => {
+        toggles.forEach((toggle) => { toggle.checked = false; });
+        updatePreviewColumns();
+    });
+    updatePreviewColumns();
+}
+
 const modelSelect = document.getElementById('model-select');
 const editSelectedModel = document.getElementById('edit-selected-model');
 modelSelect?.form.addEventListener('submit', (event) => {
