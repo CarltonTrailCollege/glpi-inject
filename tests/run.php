@@ -45,6 +45,32 @@ namespace {
             return static::$allow_item_write;
         }
 
+        public function find(array $criteria, array $order = [], int $limit = 0): array
+        {
+            $matches = [];
+            foreach (static::$records as $id => $record) {
+                foreach ($criteria as $field => $value) {
+                    if (($record[$field] ?? null) !== $value) {
+                        continue 2;
+                    }
+                }
+                $matches[$id] = ['id' => $id] + $record;
+                if ($limit > 0 && count($matches) >= $limit) {
+                    break;
+                }
+            }
+            return $matches;
+        }
+
+        public function getFromDB(int $id): bool
+        {
+            if (!isset(static::$records[$id])) {
+                return false;
+            }
+            $this->fields = ['id' => $id] + static::$records[$id];
+            return true;
+        }
+
         public function getFromDBByCrit(array $criteria): bool
         {
             foreach (static::$records as $id => $record) {
@@ -157,6 +183,11 @@ namespace {
     final class TestLocation extends CommonTreeDropdown
     {
         public static array $records = [];
+
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Location';
+        }
 
         public function isEntityAssign(): bool
         {
@@ -875,6 +906,38 @@ namespace {
     assert($DB->requests === $queries_before_username);
     assert(count(User::$records) === 6);
     unlink($user_path);
+
+    TestLocation::$records = [
+        1 => ['name' => 'Reception', 'completename' => 'Campus A > Reception', 'entities_id' => 0],
+        2 => ['name' => 'Reception', 'completename' => 'Campus B > Reception', 'entities_id' => 0],
+    ];
+    $duplicate_model = $normalization_model;
+    $duplicate_model['behavior_update'] = 1;
+    $duplicate_model['can_add_dropdown'] = 1;
+    $duplicate_model['has_header'] = 1;
+    $duplicate_path = __DIR__ . '/fixtures/glpiinject/duplicate-location.csv';
+    $duplicate_model['csv_file'] = 'duplicate-location.csv';
+    file_put_contents($duplicate_path, "Name,Location,Date\n" . str_repeat("Preview row,Campus A > Reception,2026-05-08\n", 10) . "Ambiguous row,Reception,2026-05-08\n");
+    $short_preview = $service->preview($duplicate_model, $normalization_target, 10);
+    assert(count(array_filter($short_preview['records'], static fn(array $record) => !$record['valid'])) === 0);
+    $long_preview = $service->preview($duplicate_model, $normalization_target, 50);
+    assert(!$long_preview['records'][10]['valid']);
+    assert(str_contains($long_preview['records'][10]['errors'][0], 'Multiple'));
+    $duplicate_import = $service->processStagedBatch($duplicate_model, $normalization_target, [
+        ['line' => 12, 'row' => ['Ambiguous row', 'Reception', '2026-05-08']],
+        ['line' => 13, 'row' => ['Full path row', 'Campus B > Reception', '2026-05-08']],
+    ]);
+    assert($duplicate_import['failed'] === 1);
+    assert($duplicate_import['created'] === 1);
+    assert(TestAsset::$records[$duplicate_import['rows'][1]['items_id']]['locations_id'] === 2);
+    assert(count(TestLocation::$records) === 2);
+    TestLocation::$records[3] = ['name' => 'Other leaf', 'completename' => 'Campus B > Reception', 'entities_id' => 0];
+    $duplicate_full_path = $service->processStagedBatch($duplicate_model, $normalization_target, [
+        ['line' => 14, 'row' => ['Duplicate full path', 'Campus B > Reception', '2026-05-08']],
+    ]);
+    assert($duplicate_full_path['failed'] === 1);
+    assert(count(TestLocation::$records) === 3);
+    unlink($duplicate_path);
 
     $preview_size_path = __DIR__ . '/fixtures/glpiinject/preview-size.csv';
     file_put_contents($preview_size_path, "Name\n" . str_repeat("Preview asset\n", 10001));

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-beta.6] - 2026-10-21
+
+### Fixed
+
+- Resolve tree references by full hierarchy path first and use bounded unique lookups for related items instead of leaking GLPI SQL exceptions on duplicate matches.
+- Report ambiguous references consistently in preview and import without choosing arbitrary records or creating duplicates.
+- Test duplicate Location names, unique/duplicate full paths, and failures outside the preview row limit; document sampled preview validation.
+
 ## [0.1.0-beta.5] - 2026-10-21
 
 ### Added
