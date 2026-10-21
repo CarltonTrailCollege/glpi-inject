@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-beta.1` (beta; some integration coverage and import-reliability hardening remain planned).
+**Current release:** `0.1.0-beta.2` (beta; some integration coverage and import-reliability hardening remain planned).
 
 See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
 
@@ -27,11 +27,13 @@ This is an in-process GLPI plugin. It does not require an external REST API toke
 4. Preview and validate rows, including required fields and duplicate matching.
 5. Run the import and review per-row success and error results.
 
+Preview Result Size supports 1, 10, 50, 100, 500, 1000, or 10000 rows (default 10), remembered for the current session. Changing the selection refreshes preview only; imports still process the full CSV. Large previews may take longer to validate and render.
+
 Selecting a model loads its upload settings automatically. After loading a CSV, a success message appears below the upload buttons and Continue takes you to column mapping. New models default to comma-separated CSV. Automatic encoding detection supports UTF-8, UTF-16 little/big endian, and Windows-1252 fallback, using the same detection for preview and batch imports.
 
 Duplicate matching defaults to Name, including for older models with no saved matching field. Another standard matching field can be selected; the always-create mode is no longer available. Creation and update remain controlled by the model's respective behavior options.
 
-The current development slice follows the original plugin's model-picker-first import flow and separate model-management screen. It implements reusable model create/edit/delete with General/CSV/Advanced tabs, CSV upload (10 MB limit), encoding/delimiter/header selection, a four-part destination type/field/link-field/mandatory mapper, a 12-row preview, column-count and value validation, linked dropdown lookup, optional safe dropdown creation, date/number/boolean normalization, duplicate matching by a standard field, create/update imports, confirmation prompts, per-row results, failed-row CSV export, persistent run history, and ten-row AJAX batch progress with staged input rows. Standard GLPI assets and active custom asset definitions are discovered dynamically. Custom fields are passed to GLPI using their `custom_<system_name>` names, and GLPI item methods perform persistence.
+The current development slice follows the original plugin's model-picker-first import flow and separate model-management screen. It implements reusable model create/edit/delete with General/CSV/Advanced tabs, CSV upload (10 MB limit), encoding/delimiter/header selection, a four-part destination type/field/link-field/mandatory mapper, a configurable preview, column-count and value validation, linked dropdown lookup, optional safe dropdown creation, date/number/boolean normalization, duplicate matching by a standard field, create/update imports, confirmation prompts, per-row results, failed-row CSV export, persistent run history, and ten-row AJAX batch progress with staged input rows. Standard GLPI assets and active custom asset definitions are discovered dynamically. Custom fields are passed to GLPI using their `custom_<system_name>` names, and GLPI item methods perform persistence.
 
 The upstream Data Injection plugin still uses a fixed injectable-type registry, so its itemtype-specific injection code cannot handle GLPI custom asset definitions directly. Its reusable UI/workflow conventions are being used as the reference while the dynamic target layer uses GLPI runtime asset definitions and item APIs.
 
@@ -95,4 +97,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.1`; the matching GitHub tag is `v0.1.0-beta.1`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.2`; the matching GitHub tag is `v0.1.0-beta.2`.

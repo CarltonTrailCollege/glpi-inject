@@ -667,5 +667,29 @@ namespace {
         assert(\GlpiPlugin\Glpiinject\CsvExport::sanitizeCell($plain_value) === $plain_value);
     }
 
-    echo "CSV importer regressions passed, including record permissions, entity-scoped references, spreadsheet safety, default Name matching, encoding, date normalization, dropdown reuse, and create/update flags.\n";
+    $preview_size_path = __DIR__ . '/fixtures/glpiinject/preview-size.csv';
+    file_put_contents($preview_size_path, "Name\n" . str_repeat("Preview asset\n", 10001));
+    $preview_size_model = $model;
+    $preview_size_model['csv_file'] = 'preview-size.csv';
+    $preview_size_model['has_header'] = 1;
+    $preview_size_model['mappings'] = [];
+    assert(count($service->preview($preview_size_model, $target)['records']) === 10);
+    foreach (CsvImportService::PREVIEW_SIZES as $result_size) {
+        $sized_preview = $service->preview($preview_size_model, $target, $result_size);
+        assert(count($sized_preview['records']) === $result_size);
+        assert($sized_preview['records'][0]['line'] === 2);
+        assert($sized_preview['records'][$result_size - 1]['line'] === $result_size + 1);
+    }
+    foreach ([0, -1, 12, 10001] as $invalid_size) {
+        $rejected_size = false;
+        try {
+            $service->preview($preview_size_model, $target, $invalid_size);
+        } catch (InvalidArgumentException) {
+            $rejected_size = true;
+        }
+        assert($rejected_size);
+    }
+    unlink($preview_size_path);
+
+    echo "CSV importer regressions passed, including preview sizes, record permissions, entity-scoped references, spreadsheet safety, default Name matching, encoding, date normalization, dropdown reuse, and create/update flags.\n";
 }

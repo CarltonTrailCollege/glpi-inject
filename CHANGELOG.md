@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.2] - 2026-10-21
+
+### Added
+
+- Add a session-persisted Result Size selector beside Refresh preview with 1, 10, 50, 100, 500, 1000, and 10000 rows; default to 10 and refresh preview on selection without changing import batches.
+- Validate supported sizes and add regressions for all limits, header exclusion, and invalid values.
+
 ## [0.1.0-beta.1] - 2026-10-21
 
 ### Changed

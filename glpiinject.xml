@@ -23,9 +23,9 @@ This plugin is currently beta software. Integration testing against real GLPI in
   </authors>
   <versions>
     <version>
-      <num>0.1.0-beta.1</num>
+      <num>0.1.0-beta.2</num>
       <compatibility>^11.0.8</compatibility>
-      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-beta.1/glpiinject-0.1.0-beta.1.tar.gz</download_url>
+      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-beta.2/glpiinject-0.1.0-beta.2.tar.gz</download_url>
     </version>
   </versions>
   <langs>

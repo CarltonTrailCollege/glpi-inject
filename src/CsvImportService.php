@@ -8,9 +8,12 @@ use CommonTreeDropdown;
 
 final class CsvImportService
 {
-   private const MAX_PREVIEW_ROWS = 12;
+   public const PREVIEW_SIZES = [1, 10, 50, 100, 500, 1000, 10000];
 
-   public function preview(array $model, array $target): array {
+   public function preview(array $model, array $target, int $result_size = 10): array {
+       if (!in_array($result_size, self::PREVIEW_SIZES, true)) {
+           throw new \InvalidArgumentException(__('Choose a supported preview result size.', 'glpiinject'));
+       }
        $records = [];
        $count = 0;
 
@@ -46,7 +49,7 @@ final class CsvImportService
           ];
           $count++;
 
-          if ($count >= self::MAX_PREVIEW_ROWS) {
+          if ($count >= $result_size) {
               break;
           }
       }

@@ -15,6 +15,11 @@ global $DB, $CFG_GLPI;
 
 $provider = new AssetTargetProvider();
 $service = new CsvImportService();
+$preview_size = filter_var($_POST['preview_size'] ?? $_SESSION['glpiinject_preview_size'] ?? 10, FILTER_VALIDATE_INT);
+if (!in_array($preview_size, CsvImportService::PREVIEW_SIZES, true)) {
+    $preview_size = 10;
+}
+$_SESSION['glpiinject_preview_size'] = $preview_size;
 $user_id = (int) Session::getLoginUserID();
 $model_id = (int) ($_POST['models_id'] ?? $_GET['id'] ?? 0);
 $run_id = (int) ($_GET['run'] ?? 0);
@@ -97,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               'has_header' => isset($_POST['has_header']) ? 1 : 0,
           ]);
          try {
-            $uploaded_preview = $service->preview($uploaded_model, $target);
+            $uploaded_preview = $service->preview($uploaded_model, $target, $preview_size);
             if (!$model_item->update([
                'id' => $model_id,
                'csv_file' => $filename,
@@ -171,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
        $model['delimiter'] = (string) $model['delimiter'];
        $model['has_header'] = (int) $model['has_header'];
       if ($action === 'preview') {
-          $preview = $service->preview($model, $target);
+          $preview = $service->preview($model, $target, $preview_size);
           $scroll_to_preview = true;
       } else if ($action === 'run_import') {
          if ($model['mappings'] === []) {
@@ -241,7 +246,7 @@ if ($model !== null && $preview === null && !empty($model['csv_file']) && $error
    try {
        $target = $provider->getTarget((string) $model['itemtype']);
       if ($target !== null) {
-          $preview = $service->preview($model, $target);
+          $preview = $service->preview($model, $target, $preview_size);
       }
    } catch (\Throwable $exception) {
        $error = $exception->getMessage();
@@ -273,6 +278,8 @@ TemplateRenderer::getInstance()->display('@glpiinject/asset_targets.html.twig', 
     'error' => $error,
     'mapping_saved' => $mapping_saved,
     'scroll_to_preview' => $scroll_to_preview,
+    'preview_size' => $preview_size,
+    'preview_sizes' => CsvImportService::PREVIEW_SIZES,
     'root_doc' => $CFG_GLPI['root_doc'],
 ]);
 
