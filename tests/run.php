@@ -127,6 +127,31 @@ namespace {
         return ['entities_id' => $entity];
     }
 
+    class Budget extends CommonDBTM
+    {
+        public static array $records = [];
+
+        public static function getNameField(): string
+        {
+            return 'name';
+        }
+
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Budget';
+        }
+
+        public function isEntityAssign(): bool
+        {
+            return true;
+        }
+    }
+
+    final class Supplier extends Budget
+    {
+        public static array $records = [];
+    }
+
     final class Entity extends CommonTreeDropdown
     {
         public static array $records = [];
@@ -666,6 +691,82 @@ namespace {
     foreach (['Normal text', '123', '["=1+1"]', 'A=B', '<script>alert(1)</script>'] as $plain_value) {
         assert(\GlpiPlugin\Glpiinject\CsvExport::sanitizeCell($plain_value) === $plain_value);
     }
+
+    $financial_model = $model;
+    $financial_model['can_add_dropdown'] = 1;
+    $financial_model['mappings'] = [
+        0 => ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name'],
+        1 => ['itemtype' => Budget::class, 'field' => 'name', 'linkfield' => 'budgets_id'],
+        2 => ['itemtype' => Supplier::class, 'field' => 'name', 'linkfield' => 'suppliers_id'],
+    ];
+    $financial_target = $target;
+    foreach ([Budget::class => 'budgets_id', Supplier::class => 'suppliers_id'] as $reference_type => $reference_field) {
+        $financial_target['mapping_options'][] = [
+            'itemtype' => $reference_type, 'field' => 'name', 'linkfield' => $reference_field,
+            'label' => 'Financial reference', 'is_relation' => true, 'is_infocom' => true,
+        ];
+    }
+    $financial_rows = [['line' => 2, 'row' => ['Financial asset', 'Equipment 2026', 'Vendor A']]];
+    $financial_created = $service->processStagedBatch($financial_model, $financial_target, $financial_rows);
+    assert($financial_created['created'] === 1);
+    assert($financial_created['failed'] === 0);
+    $financial_asset_id = $financial_created['rows'][0]['items_id'];
+    $financial_record = new Infocom();
+    assert($financial_record->getFromDBforDevice(TestAsset::class, $financial_asset_id));
+    assert($financial_record->fields['budgets_id'] === 1);
+    assert($financial_record->fields['suppliers_id'] === 1);
+    assert(!isset(TestAsset::$records[$financial_asset_id]['budgets_id']));
+    assert(!isset(TestAsset::$records[$financial_asset_id]['suppliers_id']));
+    $financial_model['can_add_dropdown'] = 0;
+    $financial_updated = $service->processStagedBatch($financial_model, $financial_target, $financial_rows);
+    assert($financial_updated['updated'] === 1);
+    assert(count(Budget::$records) === 1);
+    assert(count(Supplier::$records) === 1);
+    $financial_missing = $service->processStagedBatch($financial_model, $financial_target, [
+        ['line' => 3, 'row' => ['Financial missing', 'Missing budget', 'Missing supplier']],
+    ]);
+    assert($financial_missing['failed'] === 1);
+    assert(count(Budget::$records) === 1);
+    $missing_supplier = $service->processStagedBatch($financial_model, $financial_target, [
+        ['line' => 3, 'row' => ['Missing supplier asset', 'Equipment 2026', 'Missing supplier']],
+    ]);
+    assert($missing_supplier['failed'] === 1);
+    assert(count(Supplier::$records) === 1);
+    $financial_model['can_add_dropdown'] = 1;
+    $financial_replacement = $service->processStagedBatch($financial_model, $financial_target, [
+        ['line' => 4, 'row' => ['Financial asset', 'Equipment 2027', 'Vendor B']],
+    ]);
+    assert($financial_replacement['updated'] === 1);
+    assert($financial_record->getFromDBforDevice(TestAsset::class, $financial_asset_id));
+    assert($financial_record->fields['budgets_id'] === 2);
+    assert($financial_record->fields['suppliers_id'] === 2);
+    $financial_path = __DIR__ . '/fixtures/glpiinject/financial-preview.csv';
+    file_put_contents($financial_path, "Name,Budget,Supplier\nPreview financial,Preview budget,Preview vendor\n");
+    $financial_model['csv_file'] = 'financial-preview.csv';
+    $financial_model['has_header'] = 1;
+    $financial_preview = $service->preview($financial_model, $financial_target);
+    assert($financial_preview['records'][0]['valid']);
+    assert(count(Budget::$records) === 2);
+    assert(count(Supplier::$records) === 2);
+    unlink($financial_path);
+    Budget::$records[3] = ['name' => 'Foreign budget', 'entities_id' => 99];
+    $financial_model['can_add_dropdown'] = 0;
+    $foreign_budget = $service->processStagedBatch($financial_model, $financial_target, [
+        ['line' => 5, 'row' => ['Foreign budget asset', 'Foreign budget', 'Vendor A']],
+    ]);
+    assert($foreign_budget['failed'] === 1);
+    Budget::$allow_item_read = false;
+    $unreadable_budget = $service->processStagedBatch($financial_model, $financial_target, $financial_rows);
+    assert($unreadable_budget['failed'] === 1);
+    Budget::$allow_item_read = true;
+    Budget::$allow_item_write = false;
+    $financial_model['can_add_dropdown'] = 1;
+    $denied_budget = $service->processStagedBatch($financial_model, $financial_target, [
+        ['line' => 6, 'row' => ['Denied budget asset', 'Denied new budget', 'Vendor A']],
+    ]);
+    assert($denied_budget['failed'] === 1);
+    assert(count(Budget::$records) === 3);
+    Budget::$allow_item_write = true;
 
     $preview_size_path = __DIR__ . '/fixtures/glpiinject/preview-size.csv';
     file_put_contents($preview_size_path, "Name\n" . str_repeat("Preview asset\n", 10001));

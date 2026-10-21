@@ -31,6 +31,22 @@ namespace {
         }
     }
 
+    final class Budget extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Budget';
+        }
+    }
+
+    final class Supplier extends CommonDBTM
+    {
+        public static function getTypeName(int $count = 0): string
+        {
+            return 'Supplier';
+        }
+    }
+
     final class Infocom
     {
         public static function getTable(): string
@@ -236,7 +252,13 @@ namespace {
     assert($target['mapping_options'][0]['itemtype_label'] === 'Vehicle');
     assert($target['mapping_options'][0]['field'] === 'custom_serial');
     assert($target['mapping_options'][0]['label'] === 'Vehicle -> Serial number');
-    assert(count($target['mapping_options']) === 4);
+    assert(count($target['mapping_options']) === 6);
+    assert($target['mapping_options'][4]['itemtype'] === Budget::class);
+    assert($target['mapping_options'][4]['linkfield'] === 'budgets_id');
+    assert($target['mapping_options'][4]['is_infocom'] === true);
+    assert($target['mapping_options'][5]['itemtype'] === Supplier::class);
+    assert($target['mapping_options'][5]['linkfield'] === 'suppliers_id');
+    assert($target['mapping_options'][5]['is_relation'] === true);
     assert($target['mapping_options'][1]['itemtype'] === Infocom::class);
     assert($target['mapping_options'][1]['label'] === 'Financial and administrative information -> Date of purchase');
     assert($target['mapping_options'][2]['label'] === 'Computer -> General');

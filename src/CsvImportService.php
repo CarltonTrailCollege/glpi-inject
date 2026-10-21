@@ -334,7 +334,7 @@ final class CsvImportService
             continue;
          }
 
-         if (!empty($mapping['is_infocom'])) {
+         if (!empty($mapping['is_infocom']) && empty($mapping['is_relation'])) {
              $values['_infocom'][$mapping['field']] = $this->formatValue($value, $mapping, $model);
              continue;
          }
@@ -357,7 +357,7 @@ final class CsvImportService
             }
             if (!$related_found) {
                if ((int) ($model['can_add_dropdown'] ?? 0) === 1
-                    && $related_item instanceof CommonDropdown
+                    && ($related_item instanceof CommonDropdown || (!empty($mapping['is_infocom']) && in_array($related_itemtype, [\Budget::class, \Supplier::class], true)))
                     && !$related_item instanceof \Entity
                     && $related_item->canCreate()
                 ) {
@@ -369,7 +369,11 @@ final class CsvImportService
                      if (!$related_item->canViewItem()) {
                          throw new \RuntimeException(__('You do not have permission to read the referenced item.', 'glpiinject'));
                      }
-                      $values[$mapping['linkfield']] = $related_item->getID();
+                      if (!empty($mapping['is_infocom'])) {
+                          $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
+                      } else {
+                          $values[$mapping['linkfield']] = $related_item->getID();
+                      }
                       continue;
                   }
                    $dropdown_input = [
@@ -393,7 +397,11 @@ final class CsvImportService
                     ));
                }
             }
-             $values[$mapping['linkfield']] = $related_item->getID();
+             if (!empty($mapping['is_infocom'])) {
+                 $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
+             } else {
+                 $values[$mapping['linkfield']] = $related_item->getID();
+             }
          } else {
              $values[$mapping['linkfield']] = $this->formatValue($value, $mapping, $model);
          }

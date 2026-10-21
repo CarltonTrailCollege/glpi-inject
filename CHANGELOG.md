@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-beta.3] - 2026-10-21
+
+### Added
+
+- Expose Budget and Supplier as financial and administrative reference mappings, storing resolved IDs on Infocom for asset creation and updates.
+- Preserve existing-value reuse, optional missing-value creation, read-only preview, entity restrictions, and GLPI permission checks for both financial references.
+- Add provider and importer regressions for discovery, creation, reuse, disabled creation, updates, and access restrictions.
+
 ## [0.1.0-beta.2] - 2026-10-21
 
 ### Added
