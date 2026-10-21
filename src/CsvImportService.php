@@ -355,7 +355,7 @@ final class CsvImportService
              if (!$related_found) {
                  $related_found = $this->loadUniqueReference($related_item, [$mapping['field'] => $value] + $entity_criteria, $value);
              }
-             if (!$related_found && $related_itemtype === \User::class && $mapping['field'] === 'name' && (int) ($model['user_fullname_fallback'] ?? 0) === 1) {
+             if (!$related_found && $related_itemtype === \User::class && $mapping['field'] === 'name') {
                  $matched_user = $this->findUserByFullName($value);
                  if ($matched_user !== null) {
                      $related_item = $matched_user;

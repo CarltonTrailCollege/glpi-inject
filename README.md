@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-beta.6` (beta; some integration coverage and import-reliability hardening remain planned).
+**Current release:** `0.1.0-beta.7` (beta; some integration coverage and import-reliability hardening remain planned).
 
 See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
 
@@ -35,7 +35,7 @@ The Preview Columns menu shows or hides individual CSV columns, with Show all an
 
 Financial and administrative mappings include Budget and Supplier by name. Their IDs are saved on the asset's Infocom record, independently of any asset-level supplier mapping. Existing accessible values are reused; missing Budget and Supplier records may be created when Allow creation of dropdowns is enabled and GLPI permissions allow it. Preview never creates these records.
 
-For User mappings against the username field, Advanced options includes Match users by full name when no username matches (off by default). The importer tries the username first, then an exact first-name plus last-name match, including compound names. Repeated whitespace in the CSV full name is normalized. Only a unique readable, non-deleted user is accepted; ambiguous matches fail and require a username. The same resolution is used by preview and import, and missing user accounts are never created.
+For User mappings against the username field, the importer automatically tries the username first, then an exact first-name plus last-name match, including compound names. This behavior is inherent and has no checkbox. Repeated whitespace in the CSV full name is normalized. Only a unique readable, non-deleted full-name match is accepted; ambiguous matches fail and require a username. The same resolution is used by preview and import, and missing user accounts are never created. Legacy full-name-fallback settings are ignored.
 
 Selecting a model loads its upload settings automatically. After loading a CSV, a success message appears below the upload buttons and Continue takes you to column mapping. New models default to comma-separated CSV. Automatic encoding detection supports UTF-8, UTF-16 little/big endian, and Windows-1252 fallback, using the same detection for preview and batch imports.
 
@@ -105,4 +105,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.6`; the matching GitHub tag is `v0.1.0-beta.6`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.7`; the matching GitHub tag is `v0.1.0-beta.7`.

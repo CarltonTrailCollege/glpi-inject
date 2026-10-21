@@ -866,12 +866,12 @@ namespace {
     ];
     $username_only = $service->processStagedBatch($user_model, $user_target, [
         ['line' => 2, 'row' => ['Username asset', 'afolden']],
-        ['line' => 3, 'row' => ['Disabled fallback asset', 'Alicia Folden']],
+        ['line' => 3, 'row' => ['Automatic fallback asset', 'Alicia Folden']],
     ]);
-    assert($username_only['created'] === 1);
-    assert($username_only['failed'] === 1);
-    assert($DB->requests === 0);
-    $user_model['user_fullname_fallback'] = 1;
+    assert($username_only['created'] === 2);
+    assert($username_only['failed'] === 0);
+    assert($DB->requests === 1);
+    $user_model['user_fullname_fallback'] = 0;
     $fullnames = $service->processStagedBatch($user_model, $user_target, [
         ['line' => 4, 'row' => ['Full name asset', 'Alicia Folden']],
         ['line' => 5, 'row' => ['Compound name asset', 'Mary   Jane Van Dyke']],

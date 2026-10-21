@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-beta.7] - 2026-10-21
+
+### Changed
+
+- Always try full-name matching when a User username lookup has no match; remove the Advanced checkbox and ignore legacy setting values.
+- Preserve username precedence, unique/readable full-name requirements, and the prohibition on automatic user creation.
+- Stop adding the obsolete setting on fresh installs while leaving existing database columns intact for safe upgrades.
+
 ## [0.1.0-beta.6] - 2026-10-21
 
 ### Fixed
