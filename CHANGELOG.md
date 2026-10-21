@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-beta.1] - 2026-10-21
+
+### Changed
+
+- Promote the prerelease maturity from alpha to beta while documenting remaining integration-test and import-reliability work.
+
 ## [0.1.0-alpha.40] - 2026-10-20
 
 ### Fixed

@@ -1,7 +1,7 @@
 <root>
   <name>GLPI Inject</name>
   <key>glpiinject</key>
-  <state>alpha</state>
+  <state>beta</state>
   <logo>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/glpiinject.svg</logo>
   <description>
     <short>
@@ -10,7 +10,7 @@
     <long>
       <en>GLPI Inject provides reusable CSV import models for standard and custom GLPI assets. Configure CSV parsing, map columns to GLPI fields, preview and validate rows, match existing assets, and review per-row import results.
 
-This plugin is currently alpha software. Features may be incomplete and compatibility claims are limited to GLPI 11.0.8 and later in the GLPI 11 series.</en>
+This plugin is currently beta software. Integration testing against real GLPI installations and import concurrency/failure-recovery hardening remain planned. Compatibility claims are limited to GLPI 11.0.8 and later in the GLPI 11 series.</en>
     </long>
   </description>
   <homepage>https://github.com/CarltonTrailCollege/glpi-inject</homepage>
@@ -23,9 +23,9 @@ This plugin is currently alpha software. Features may be incomplete and compatib
   </authors>
   <versions>
     <version>
-      <num>0.1.0-alpha.40</num>
+      <num>0.1.0-beta.1</num>
       <compatibility>^11.0.8</compatibility>
-      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-alpha.40/glpiinject-0.1.0-alpha.40.tar.gz</download_url>
+      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-beta.1/glpiinject-0.1.0-beta.1.tar.gz</download_url>
     </version>
   </versions>
   <langs>
