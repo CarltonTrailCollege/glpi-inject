@@ -1,0 +1,30 @@
+name: Release package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Validate tag and package
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          grep -Fq "define('PLUGIN_GLPIINJECT_VERSION', '${version}')" setup.php
+          php scripts/package-release.php dist
+          tar -tzf "dist/glpiinject-${version}.tar.gz" | grep -q '^glpiinject/setup.php$'
+      - name: Publish release archive
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/glpiinject-*.tar.gz
+          prerelease: ${{ contains(github.ref_name, '-') }}

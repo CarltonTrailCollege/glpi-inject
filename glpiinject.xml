@@ -1,0 +1,49 @@
+<root>
+  <name>GLPI Inject</name>
+  <key>glpiinject</key>
+  <state>alpha</state>
+  <logo>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/glpiinject.svg</logo>
+  <description>
+    <short>
+      <en>Import CSV data into standard and custom GLPI assets using reusable import models.</en>
+    </short>
+    <long>
+      <en>GLPI Inject provides reusable CSV import models for standard and custom GLPI assets. Configure CSV parsing, map columns to GLPI fields, preview and validate rows, match existing assets, and review per-row import results.
+
+This plugin is currently alpha software. Features may be incomplete and compatibility claims are limited to GLPI 11.0.8 and later in the GLPI 11 series.</en>
+    </long>
+  </description>
+  <homepage>https://github.com/CarltonTrailCollege/glpi-inject</homepage>
+  <download>https://github.com/CarltonTrailCollege/glpi-inject/releases</download>
+  <issues>https://github.com/CarltonTrailCollege/glpi-inject/issues</issues>
+  <readme>https://github.com/CarltonTrailCollege/glpi-inject/blob/main/README.md</readme>
+  <changelog>https://github.com/CarltonTrailCollege/glpi-inject/blob/main/CHANGELOG.md</changelog>
+  <authors>
+    <author>Carlton Trail College</author>
+  </authors>
+  <versions>
+    <version>
+      <num>0.1.0-alpha.39</num>
+      <compatibility>^11.0.8</compatibility>
+      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-alpha.39/glpiinject-0.1.0-alpha.39.tar.gz</download_url>
+    </version>
+  </versions>
+  <langs>
+    <lang>en_GB</lang>
+  </langs>
+  <license>GPL v2+</license>
+  <tags>
+    <en>
+      <tag>Import</tag>
+      <tag>CSV</tag>
+      <tag>Assets</tag>
+    </en>
+  </tags>
+  <screenshots>
+    <screenshot>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/docs/screenshots/model-management.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/docs/screenshots/csv-upload.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/docs/screenshots/column-mapping.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/docs/screenshots/preview.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/CarltonTrailCollege/glpi-inject/main/docs/screenshots/import-results.png</screenshot>
+  </screenshots>
+</root>

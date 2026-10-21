@@ -2,9 +2,11 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-alpha.38` (alpha; expect incomplete parity and breaking changes).
+**Current release:** `0.1.0-alpha.39` (alpha; expect incomplete parity and breaking changes).
 
 See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
+
+The plugin is licensed under [GPL-2.0-or-later](LICENSE). The GLPI catalog metadata is in [glpiinject.xml](glpiinject.xml).
 
 ## Compatibility
 
@@ -37,6 +39,24 @@ Remaining parity work includes broader GLPI datatype and dropdown coverage, mode
 
 Date and datetime fields normalize common year-first, month-first, and day-first values, with optional times, into GLPI storage format. The selected date format takes precedence for ambiguous dates; choose month-day-year for CSV values such as `5/8/2026` meaning May 8.
 
+## Release packaging
+
+Build the installable archive from the repository root with PHP CLI:
+
+```bash
+php scripts/package-release.php
+```
+
+The script writes `dist/glpiinject-<version>.tar.gz`. The archive contains a top-level `glpiinject/` directory and only plugin runtime files, metadata, and documentation; it excludes tests, deployment scripts, and repository history. Verify the archive structure with:
+
+```bash
+tar -tzf dist/glpiinject-<version>.tar.gz
+```
+
+Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.php` runs the release workflow, validates the package root, and attaches the archive to a GitHub Release. The existing alpha.38 tag predates this workflow; this alpha.39 release uses the new workflow. Update the version, catalog version entry, and download URL together for each release.
+
+The catalog manifest is metadata scaffolding only until the matching archive URL is live. Capture genuine screenshots from a supported GLPI instance and add them to the manifest before submitting it. Catalog listing and Marketplace approval are separate reviews.
+
 ## Installation for development
 
 GLPI Inject is intended to be installed on the Debian host where GLPI is running. Clone this repository on that host, then run the installer with the GLPI root and web-server account:
@@ -59,4 +79,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.38`; the matching GitHub tag is `v0.1.0-alpha.38`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.39`; the matching GitHub tag is `v0.1.0-alpha.39`.

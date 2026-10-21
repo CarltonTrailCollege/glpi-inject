@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.39] - 2026-10-20
+
+### Added
+
+- Add GPL-2.0-or-later license text, alpha catalog metadata, plugin artwork, and product screenshots.
+- Add reproducible release packaging and tag-triggered GitHub release publishing.
+
 ## [0.1.0-alpha.38] - 2026-10-20
 
 ### Security
