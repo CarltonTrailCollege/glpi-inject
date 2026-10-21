@@ -22,7 +22,8 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           grep -Fq "define('PLUGIN_GLPIINJECT_VERSION', '${version}')" setup.php
           php scripts/package-release.php dist
-          tar -tzf "dist/glpiinject-${version}.tar.gz" | grep -q '^glpiinject/setup.php$'
+          tar -tzf "dist/glpiinject-${version}.tar.gz" > dist/package-contents.txt
+          grep -Fxq 'glpiinject/setup.php' dist/package-contents.txt
       - name: Publish release archive
         uses: softprops/action-gh-release@v2
         with:

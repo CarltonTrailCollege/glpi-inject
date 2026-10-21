@@ -23,9 +23,9 @@ This plugin is currently alpha software. Features may be incomplete and compatib
   </authors>
   <versions>
     <version>
-      <num>0.1.0-alpha.39</num>
+      <num>0.1.0-alpha.40</num>
       <compatibility>^11.0.8</compatibility>
-      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-alpha.39/glpiinject-0.1.0-alpha.39.tar.gz</download_url>
+      <download_url>https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-alpha.40/glpiinject-0.1.0-alpha.40.tar.gz</download_url>
     </version>
   </versions>
   <langs>

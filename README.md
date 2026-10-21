@@ -2,7 +2,7 @@
 
 GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
 
-**Current release:** `0.1.0-alpha.39` (alpha; expect incomplete parity and breaking changes).
+**Current release:** `0.1.0-alpha.40` (alpha; expect incomplete parity and breaking changes).
 
 See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
 
@@ -53,7 +53,7 @@ The script writes `dist/glpiinject-<version>.tar.gz`. The archive contains a top
 tar -tzf dist/glpiinject-<version>.tar.gz
 ```
 
-Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.php` runs the release workflow, validates the package root, and attaches the archive to a GitHub Release. The existing alpha.38 tag predates this workflow; this alpha.39 release uses the new workflow. Update the version, catalog version entry, and download URL together for each release.
+Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.php` runs the release workflow, validates the package root, and attaches the archive to a GitHub Release. The existing alpha.38 tag predates this workflow; alpha.40 uses the corrected workflow. Update the version, catalog version entry, and download URL together for each release.
 
 The catalog manifest is metadata scaffolding only until the matching archive URL is live. Capture genuine screenshots from a supported GLPI instance and add them to the manifest before submitting it. Catalog listing and Marketplace approval are separate reviews.
 
@@ -79,4 +79,4 @@ The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin
 
 You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
 
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.39`; the matching GitHub tag is `v0.1.0-alpha.39`.
+Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-alpha.40`; the matching GitHub tag is `v0.1.0-alpha.40`.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-alpha.40] - 2026-10-20
+
+### Fixed
+
+- Avoid a broken-pipe failure when the release workflow verifies archive contents.
+
 ## [0.1.0-alpha.39] - 2026-10-20
 
 ### Added
