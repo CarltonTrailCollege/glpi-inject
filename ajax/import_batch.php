@@ -14,9 +14,9 @@ global $DB;
 $processing_started = false;
 
 try {
-    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-        throw new RuntimeException(__('Import batches require a POST request.', 'glpiinject'));
-    }
+   if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+       throw new \RuntimeException(__('Import batches require a POST request.', 'glpiinject'));
+   }
     Session::checkRight('config', UPDATE);
     $current_user_id = (int) Session::getLoginUserID();
     $next_csrf_token = Session::getNewCSRFToken();
@@ -26,79 +26,77 @@ try {
     $batch_size = min(50, max(1, (int) ($_POST['batch_size'] ?? 10)));
 
     $run = new ImportRun();
-    if (
-        !$run->getFromDB($run_id)
+   if (!$run->getFromDB($run_id)
         || (int) $run->fields['users_id'] !== $current_user_id
         || !Session::haveAccessToEntity((int) $run->fields['entities_id'])
     ) {
-        throw new RuntimeException(__('Import run not found or unavailable.', 'glpiinject'));
-    }
+       throw new \RuntimeException(__('Import run not found or unavailable.', 'glpiinject'));
+   }
 
     $action = (string) ($_POST['action'] ?? 'batch');
-    if (!in_array($action, ['batch', 'cancel'], true)) {
-        throw new RuntimeException(__('Invalid import action.', 'glpiinject'));
-    }
-    if ($action === 'cancel') {
-        if (($run->fields['status'] ?? null) === 'running') {
-            $run->update([
-                'id' => $run_id,
-                'status' => 'cancelled',
-                'total' => (int) $run->fields['processed'],
-            ]);
-            $run->getFromDB($run_id);
-        }
-        echo json_encode([
-            'csrf_token' => $next_csrf_token,
-            'offset' => (int) $run->fields['processed'],
-            'processed' => (int) $run->fields['processed'],
-            'total' => (int) $run->fields['total'],
-            'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
-            'created' => (int) $run->fields['created'],
-            'updated' => (int) $run->fields['updated'],
-            'failed' => (int) $run->fields['failed'],
-            'done' => true,
-            'cancelled' => ($run->fields['status'] ?? null) === 'cancelled',
-        ], JSON_THROW_ON_ERROR);
-        return;
-    }
+   if (!in_array($action, ['batch', 'cancel'], true)) {
+       throw new \RuntimeException(__('Invalid import action.', 'glpiinject'));
+   }
+   if ($action === 'cancel') {
+      if (($run->fields['status'] ?? null) === 'running') {
+          $run->update([
+              'id' => $run_id,
+              'status' => 'cancelled',
+              'total' => (int) $run->fields['processed'],
+          ]);
+          $run->getFromDB($run_id);
+      }
+       echo json_encode([
+           'csrf_token' => $next_csrf_token,
+           'offset' => (int) $run->fields['processed'],
+           'processed' => (int) $run->fields['processed'],
+           'total' => (int) $run->fields['total'],
+           'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
+           'created' => (int) $run->fields['created'],
+           'updated' => (int) $run->fields['updated'],
+           'failed' => (int) $run->fields['failed'],
+           'done' => true,
+           'cancelled' => ($run->fields['status'] ?? null) === 'cancelled',
+       ], JSON_THROW_ON_ERROR);
+       return;
+   }
 
-    if (($run->fields['status'] ?? null) === 'cancelled') {
-        echo json_encode([
-            'csrf_token' => $next_csrf_token,
-            'offset' => (int) $run->fields['processed'],
-            'processed' => (int) $run->fields['processed'],
-            'total' => (int) $run->fields['total'],
-            'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
-            'created' => (int) $run->fields['created'],
-            'updated' => (int) $run->fields['updated'],
-            'failed' => (int) $run->fields['failed'],
-            'done' => true,
-            'cancelled' => true,
-        ], JSON_THROW_ON_ERROR);
-        return;
-    }
-    if (($run->fields['status'] ?? null) !== 'running') {
-        throw new RuntimeException(__('Import run is no longer running.', 'glpiinject'));
-    }
+   if (($run->fields['status'] ?? null) === 'cancelled') {
+       echo json_encode([
+           'csrf_token' => $next_csrf_token,
+           'offset' => (int) $run->fields['processed'],
+           'processed' => (int) $run->fields['processed'],
+           'total' => (int) $run->fields['total'],
+           'progress' => (int) $run->fields['total'] > 0 ? round(((int) $run->fields['processed'] / (int) $run->fields['total']) * 100, 1) : 100,
+           'created' => (int) $run->fields['created'],
+           'updated' => (int) $run->fields['updated'],
+           'failed' => (int) $run->fields['failed'],
+           'done' => true,
+           'cancelled' => true,
+       ], JSON_THROW_ON_ERROR);
+       return;
+   }
+   if (($run->fields['status'] ?? null) !== 'running') {
+       throw new \RuntimeException(__('Import run is no longer running.', 'glpiinject'));
+   }
 
     $model_item = new ImportModel();
-    if (
-        !$model_item->getFromDB((int) $run->fields['models_id'])
+   if (!$model_item->getFromDB((int) $run->fields['models_id'])
         || (int) $model_item->fields['users_id'] !== (int) $run->fields['users_id']
         || (int) $model_item->fields['entities_id'] !== (int) $run->fields['entities_id']
         || !Session::haveAccessToEntity((int) $model_item->fields['entities_id'])
     ) {
-        throw new RuntimeException(__('Import model not found.', 'glpiinject'));
-    }
+       throw new \RuntimeException(__('Import model not found.', 'glpiinject'));
+   }
     $model = $model_item->fields;
     $model['mappings'] = json_decode((string) ($model['mappings'] ?? ''), true) ?: [];
     $target = (new AssetTargetProvider())->getTarget((string) $model['itemtype']);
-    if ($target === null) {
-        throw new RuntimeException(__('The selected asset type is no longer active.', 'glpiinject'));
-    }
-    if ($offset !== (int) $run->fields['processed']) {
-        throw new RuntimeException(__('This batch request is out of date. Reload the import results.', 'glpiinject'));
-    }
+   if ($target === null) {
+       throw new \RuntimeException(__('The selected asset type is no longer active.', 'glpiinject'));
+   }
+   if ($offset !== (int) $run->fields['processed']) {
+       throw new \RuntimeException(__('This batch request is out of date. Reload the import results.', 'glpiinject'));
+   }
     $processing_started = true;
 
     $batch_model = $model;
@@ -116,22 +114,22 @@ try {
         $rows
     ));
     $log_item = new ImportRunLog();
-    foreach ($batch['rows'] as $outcome) {
-        $log_values = [
-            'runs_id' => $run_id,
-            'line' => $outcome['line'],
-            'status' => $outcome['status'],
-            'message' => $outcome['message'] ?? '',
-            'itemtype' => $outcome['itemtype'] ?? $model['itemtype'],
-            'items_id' => $outcome['items_id'] ?? 0,
-        ];
-        $existing_log = new ImportRunLog();
-        if ($existing_log->getFromDBByCrit(['runs_id' => $run_id, 'line' => $outcome['line']])) {
-            $log_item->update(['id' => $existing_log->getID()] + $log_values);
-        } else {
-            $log_item->add($log_values + ['source_row' => json_encode($outcome['row'] ?? [], JSON_THROW_ON_ERROR)]);
-        }
-    }
+   foreach ($batch['rows'] as $outcome) {
+       $log_values = [
+           'runs_id' => $run_id,
+           'line' => $outcome['line'],
+           'status' => $outcome['status'],
+           'message' => $outcome['message'] ?? '',
+           'itemtype' => $outcome['itemtype'] ?? $model['itemtype'],
+           'items_id' => $outcome['items_id'] ?? 0,
+       ];
+       $existing_log = new ImportRunLog();
+       if ($existing_log->getFromDBByCrit(['runs_id' => $run_id, 'line' => $outcome['line']])) {
+           $log_item->update(['id' => $existing_log->getID()] + $log_values);
+       } else {
+           $log_item->add($log_values + ['source_row' => json_encode($outcome['row'] ?? [], JSON_THROW_ON_ERROR)]);
+       }
+   }
 
     $processed = (int) $run->fields['processed'] + $batch['processed'];
     $created = (int) $run->fields['created'] + $batch['created'];
@@ -165,27 +163,28 @@ try {
         'done' => $done || $cancelled,
         'cancelled' => $cancelled,
     ], JSON_THROW_ON_ERROR);
-} catch (Throwable $exception) {
-    if ($processing_started && isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {
-        try {
-            $error_log = new ImportRunLog();
-            $error_log->add([
-                'runs_id' => $run_id,
-                'line' => (int) $run->fields['processed'] + 1,
-                'status' => 'failed',
-                'message' => $exception->getMessage(),
-                'itemtype' => null,
-                'items_id' => 0,
-                'source_row' => '',
-            ]);
-        } catch (Throwable) {
-        }
-        $run->update([
-            'id' => $run_id,
-            'failed' => (int) $run->fields['failed'] + 1,
-            'status' => 'failed',
-        ]);
-    }
+} catch (\Throwable $exception) {
+   if ($processing_started && isset($run_id, $run) && $run instanceof ImportRun && $run->getID() > 0 && $run->fields['status'] === 'running') {
+      try {
+          $error_log = new ImportRunLog();
+          $error_log->add([
+              'runs_id' => $run_id,
+              'line' => (int) $run->fields['processed'] + 1,
+              'status' => 'failed',
+              'message' => $exception->getMessage(),
+              'itemtype' => null,
+              'items_id' => 0,
+              'source_row' => '',
+          ]);
+      } catch (\Throwable) {
+          error_log('GLPI Inject: unable to persist the import failure log.');
+      }
+       $run->update([
+           'id' => $run_id,
+           'failed' => (int) $run->fields['failed'] + 1,
+           'status' => 'failed',
+       ]);
+   }
     http_response_code(400);
     echo json_encode([
         'error' => $exception->getMessage(),

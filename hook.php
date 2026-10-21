@@ -1,7 +1,6 @@
 <?php
 
-function plugin_glpiinject_install(): bool
-{
+function plugin_glpiinject_install(): bool {
     global $DB;
 
     $charset = DBConnection::getDefaultCharset();
@@ -9,8 +8,8 @@ function plugin_glpiinject_install(): bool
     $key_sign = DBConnection::getDefaultPrimaryKeySignOption();
     $table = 'glpi_plugin_glpiinject_models';
 
-    if (!$DB->tableExists($table)) {
-        $DB->doQuery("CREATE TABLE `$table` (
+   if (!$DB->tableExists($table)) {
+       $DB->doQuery("CREATE TABLE `$table` (
             `id` int $key_sign NOT NULL AUTO_INCREMENT,
             `name` varchar(255) NOT NULL,
             `comment` text DEFAULT NULL,
@@ -37,33 +36,33 @@ function plugin_glpiinject_install(): bool
             KEY `entities_id` (`entities_id`),
             KEY `users_id` (`users_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation ROW_FORMAT=DYNAMIC");
-    } else {
-        $migration = new Migration(PLUGIN_GLPIINJECT_VERSION);
-        foreach ([
-            'comment' => ['text', ['null' => true]],
-            'is_private' => ['bool', ['value' => 1]],
-            'behavior_add' => ['bool', ['value' => 1]],
-            'behavior_update' => ['bool', ['value' => 0]],
-            'can_add_dropdown' => ['bool', ['value' => 0]],
-            'delimiter' => ['char(1)', ['value' => ',']],
-            'file_encoding' => ['string', ['value' => 'Automatic']],
-            'has_header' => ['bool', ['value' => 1]],
-            'date_format' => ['string', ['value' => 'yyyy-mm-dd']],
-            'float_format' => ['string', ['value' => '1,234.56']],
-            'match_field' => ['string', ['null' => true]],
-            'mappings' => ['text', ['null' => true]],
-            'csv_file' => ['string', ['null' => true]],
-        ] as $field => [$type, $options]) {
-            if (!$DB->fieldExists($table, $field)) {
-                $migration->addField($table, $field, $type, $options);
-            }
-        }
-        $migration->executeMigration();
-    }
+   } else {
+       $migration = new Migration(PLUGIN_GLPIINJECT_VERSION);
+      foreach ([
+           'comment' => ['text', ['null' => true]],
+           'is_private' => ['bool', ['value' => 1]],
+           'behavior_add' => ['bool', ['value' => 1]],
+           'behavior_update' => ['bool', ['value' => 0]],
+           'can_add_dropdown' => ['bool', ['value' => 0]],
+           'delimiter' => ['char(1)', ['value' => ',']],
+           'file_encoding' => ['string', ['value' => 'Automatic']],
+           'has_header' => ['bool', ['value' => 1]],
+           'date_format' => ['string', ['value' => 'yyyy-mm-dd']],
+           'float_format' => ['string', ['value' => '1,234.56']],
+           'match_field' => ['string', ['null' => true]],
+           'mappings' => ['text', ['null' => true]],
+           'csv_file' => ['string', ['null' => true]],
+       ] as $field => [$type, $options]) {
+         if (!$DB->fieldExists($table, $field)) {
+             $migration->addField($table, $field, $type, $options);
+         }
+      }
+       $migration->executeMigration();
+   }
 
     $runs_table = 'glpi_plugin_glpiinject_runs';
-    if (!$DB->tableExists($runs_table)) {
-        $DB->doQuery("CREATE TABLE `$runs_table` (
+   if (!$DB->tableExists($runs_table)) {
+       $DB->doQuery("CREATE TABLE `$runs_table` (
             `id` int $key_sign NOT NULL AUTO_INCREMENT,
             `models_id` int $key_sign NOT NULL,
             `users_id` int $key_sign NOT NULL,
@@ -83,21 +82,21 @@ function plugin_glpiinject_install(): bool
             KEY `users_id` (`users_id`),
             KEY `status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation ROW_FORMAT=DYNAMIC");
-    }
+   }
     $run_migration = new Migration(PLUGIN_GLPIINJECT_VERSION);
-    foreach ([
+   foreach ([
         'csv_offset' => ['integer', ['value' => 0]],
         'csv_line' => ['integer', ['value' => 0]],
     ] as $field => [$type, $options]) {
-        if (!$DB->fieldExists($runs_table, $field)) {
-            $run_migration->addField($runs_table, $field, $type, $options);
-        }
-    }
+      if (!$DB->fieldExists($runs_table, $field)) {
+          $run_migration->addField($runs_table, $field, $type, $options);
+      }
+   }
     $run_migration->executeMigration();
 
     $logs_table = 'glpi_plugin_glpiinject_runlogs';
-    if (!$DB->tableExists($logs_table)) {
-        $DB->doQuery("CREATE TABLE `$logs_table` (
+   if (!$DB->tableExists($logs_table)) {
+       $DB->doQuery("CREATE TABLE `$logs_table` (
             `id` int $key_sign NOT NULL AUTO_INCREMENT,
             `runs_id` int $key_sign NOT NULL,
             `line` int unsigned NOT NULL,
@@ -112,28 +111,27 @@ function plugin_glpiinject_install(): bool
             KEY `line` (`line`),
             KEY `status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=$charset COLLATE=$collation ROW_FORMAT=DYNAMIC");
-    }
+   }
 
     return true;
 }
 
-function plugin_glpiinject_uninstall(): bool
-{
+function plugin_glpiinject_uninstall(): bool {
     global $DB;
 
-    foreach ([
+   foreach ([
         'glpi_plugin_glpiinject_runlogs',
         'glpi_plugin_glpiinject_runs',
         'glpi_plugin_glpiinject_models',
     ] as $table) {
-        if ($DB->tableExists($table)) {
-            $DB->doQuery("DROP TABLE `$table`");
-        }
-    }
+      if ($DB->tableExists($table)) {
+          $DB->doQuery("DROP TABLE `$table`");
+      }
+   }
 
-    if (is_dir(PLUGIN_GLPIINJECT_UPLOAD_DIR)) {
-        Toolbox::deleteDir(PLUGIN_GLPIINJECT_UPLOAD_DIR);
-    }
+   if (is_dir(PLUGIN_GLPIINJECT_UPLOAD_DIR)) {
+       Toolbox::deleteDir(PLUGIN_GLPIINJECT_UPLOAD_DIR);
+   }
 
     return true;
 }

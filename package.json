@@ -1,0 +1,11 @@
+{
+  "name": "glpi-inject-quality-tools",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "lint:inline-js": "node scripts/lint-inline-js.cjs"
+  },
+  "devDependencies": {
+    "eslint": "8.57.1"
+  }
+}

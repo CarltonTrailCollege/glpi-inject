@@ -57,6 +57,22 @@ Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.ph
 
 The catalog manifest is metadata scaffolding only until the matching archive URL is live. Capture genuine screenshots from a supported GLPI instance and add them to the manifest before submitting it. Catalog listing and Marketplace approval are separate reviews.
 
+## Quality checks
+
+Install the pinned development tools and run the same checks as CI:
+
+```bash
+composer install
+npm ci
+composer check
+```
+
+The checks run GLPI's PHP coding standard on production PHP files, TwigCS on templates, ESLint on inline template JavaScript, PHPStan level 1 against a sibling GLPI 11 checkout at `../glpi-core`, and the regression scripts with PHP assertions enabled. GLPI's documented `glpi-project/coding-standard` package is archived upstream but remains the official published ruleset; it is pinned in the lockfile so checks are reproducible. CI checks out GLPI's `11.0/bugfixes` branch automatically. To run PHPStan locally, clone that branch beside this repository:
+
+```bash
+git clone --depth 1 --branch 11.0/bugfixes https://github.com/glpi-project/glpi.git ../glpi-core
+```
+
 ## Installation for development
 
 GLPI Inject is intended to be installed on the Debian host where GLPI is running. Clone this repository on that host, then run the installer with the GLPI root and web-server account:

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset name="GLPI Inject">
+  <description>GLPI coding standard for production PHP.</description>
+  <file>hook.php</file>
+  <file>setup.php</file>
+  <file>ajax</file>
+  <file>front</file>
+  <file>src</file>
+  <file>scripts/package-release.php</file>
+  <arg name="basepath" value="."/>
+  <arg name="colors"/>
+  <arg value="sp"/>
+  <config name="installed_paths" value="vendor/glpi-project/coding-standard"/>
+  <rule ref="vendor/glpi-project/coding-standard/GlpiStandard"/>
+</ruleset>

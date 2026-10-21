@@ -1,0 +1,42 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Checkout GLPI 11 API definitions
+        run: git clone --depth 1 --branch 11.0/bugfixes https://github.com/glpi-project/glpi.git ../glpi-core
+      - name: Install locked development tools
+        run: composer install --no-interaction --prefer-dist
+      - name: Install locked JavaScript tools
+        run: npm ci
+      - name: Validate composer configuration
+        run: composer validate --strict
+      - name: Run PHP coding standard
+        run: composer lint:php
+      - name: Lint Twig templates
+        run: composer lint:twig
+      - name: Lint inline JavaScript
+        run: composer lint:js
+      - name: Run static analysis
+        run: composer analyse
+      - name: Run regression tests with assertions enabled
+        run: composer test

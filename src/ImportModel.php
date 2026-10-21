@@ -6,39 +6,36 @@ use CommonDBTM;
 
 final class ImportModel extends CommonDBTM
 {
-    public static $rightname = 'config';
+   public static $rightname = 'config';
 
-    public static function getTypeName($nb = 0): string
-    {
-        return _n('Import model', 'Import models', $nb, 'glpiinject');
-    }
+   public static function getTypeName($nb = 0): string {
+       return _n('Import model', 'Import models', $nb, 'glpiinject');
+   }
 
-    public static function getTable($classname = null): string
-    {
-        return 'glpi_plugin_glpiinject_models';
-    }
+   public static function getTable($classname = null): string {
+       return 'glpi_plugin_glpiinject_models';
+   }
 
-    public function rawSearchOptions(): array
-    {
-        return [
-            [
-                'id' => 'common',
-                'name' => __('Characteristics'),
-            ],
-            [
-                'id' => 1,
-                'table' => self::getTable(),
-                'field' => 'name',
-                'name' => __('Name'),
-                'datatype' => 'itemlink',
-            ],
-            [
-                'id' => 2,
-                'table' => self::getTable(),
-                'field' => 'id',
-                'name' => __('ID'),
-                'datatype' => 'number',
-            ],
-        ];
-    }
+   public function rawSearchOptions(): array {
+       return [
+           [
+               'id' => 'common',
+               'name' => __('Characteristics'),
+           ],
+           [
+               'id' => 1,
+               'table' => self::getTable(),
+               'field' => 'name',
+               'name' => __('Name'),
+               'datatype' => 'itemlink',
+           ],
+           [
+               'id' => 2,
+               'table' => self::getTable(),
+               'field' => 'id',
+               'name' => __('ID'),
+               'datatype' => 'number',
+           ],
+       ];
+   }
 }

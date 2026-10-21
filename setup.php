@@ -14,8 +14,7 @@ if (!defined('PLUGIN_GLPIINJECT_UPLOAD_DIR')) {
     define('PLUGIN_GLPIINJECT_UPLOAD_DIR', GLPI_PLUGIN_DOC_DIR . '/glpiinject');
 }
 
-function plugin_init_glpiinject(): void
-{
+function plugin_init_glpiinject(): void {
     global $PLUGIN_HOOKS;
 
     \Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
@@ -32,8 +31,7 @@ function plugin_init_glpiinject(): void
     $PLUGIN_HOOKS['redefine_menus']['glpiinject'] = [GlpiPlugin\Glpiinject\Menu::class, 'addToMenu'];
 }
 
-function plugin_version_glpiinject(): array
-{
+function plugin_version_glpiinject(): array {
     return [
         'name' => __('GLPI Inject', 'glpiinject'),
         'version' => PLUGIN_GLPIINJECT_VERSION,
@@ -49,13 +47,11 @@ function plugin_version_glpiinject(): array
     ];
 }
 
-function plugin_glpiinject_check_prerequisites(): bool
-{
+function plugin_glpiinject_check_prerequisites(): bool {
     return version_compare(GLPI_VERSION, PLUGIN_GLPIINJECT_MIN_GLPI, '>=')
         && version_compare(GLPI_VERSION, PLUGIN_GLPIINJECT_MAX_GLPI, '<=');
 }
 
-function plugin_glpiinject_check_config(): bool
-{
+function plugin_glpiinject_check_config(): bool {
     return true;
 }

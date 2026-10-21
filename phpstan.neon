@@ -1,0 +1,25 @@
+parameters:
+    level: 1
+    paths:
+        - ajax
+        - front
+        - hook.php
+        - setup.php
+        - src
+        - scripts/package-release.php
+    bootstrapFiles:
+        - phpstan-bootstrap.php
+    scanDirectories:
+        - ../glpi-core/src
+        - ../glpi-core/inc
+    tmpDir: .phpstan-cache
+    reportUnmatchedIgnoredErrors: true
+    ignoreErrors:
+        -
+            identifier: include.fileNotFound
+            message: '#Path in include\(\) "\.\./\.\./\.\./inc/includes\.php" is not a file or it does not exist\.#'
+            paths:
+                - ajax/import_batch.php
+                - front/export_errors.php
+                - front/index.php
+                - front/models.php

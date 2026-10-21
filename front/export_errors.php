@@ -1,9 +1,9 @@
 <?php
 
+use GlpiPlugin\Glpiinject\CsvExport;
 use GlpiPlugin\Glpiinject\ImportModel;
 use GlpiPlugin\Glpiinject\ImportRun;
 use GlpiPlugin\Glpiinject\ImportRunLog;
-use GlpiPlugin\Glpiinject\CsvExport;
 
 include('../../../inc/includes.php');
 require_once dirname(__DIR__) . '/src/CsvExport.php';
@@ -17,8 +17,7 @@ if (!$run->getFromDB($run_id) || (int) $run->fields['users_id'] !== (int) Sessio
 }
 
 $model = new ImportModel();
-if (
-    !$model->getFromDB((int) $run->fields['models_id'])
+if (!$model->getFromDB((int) $run->fields['models_id'])
     || (int) $model->fields['users_id'] !== (int) Session::getLoginUserID()
     || (int) $model->fields['entities_id'] !== (int) $run->fields['entities_id']
     || !Session::haveAccessToEntity((int) $model->fields['entities_id'])
