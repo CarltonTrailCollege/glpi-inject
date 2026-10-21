@@ -40,3 +40,11 @@ The importer is not fully transactional: an asset may persist if a later Infocom
 Model mappings are decoded permissively from stored JSON. Unexpected server exceptions can surface implementation details to authorized users. Model editing/uploading during an active run is not locked or snapshotted. These remain hardening opportunities and should be considered before production use.
 
 CSV uploads and error logs can contain personal information. Restrict plugin access, protect backups and the GLPI document directory, define retention policies, and deploy only supported GLPI/PHP versions over HTTPS.
+
+## Reporting And Maintenance
+
+- Report suspected security vulnerabilities through [GitHub private vulnerability reporting](https://github.com/CarltonTrailCollege/glpi-inject/security/advisories/new). Do not include exploit details, personal information, or sensitive inventory data in a public issue.
+- Report ordinary bugs and feature requests through [GitHub Issues](https://github.com/CarltonTrailCollege/glpi-inject/issues).
+- The Carlton Trail College GLPI Inject maintainer group owns triage, fixes, security advisories, and release coordination. Carlton Trail College repository owners are responsible for keeping maintainers assigned and ensuring the private reporting channel remains monitored.
+- No response-time SLA is currently promised. Maintainers should acknowledge reports, coordinate a fix and disclosure plan, and publish a release/advisory when appropriate.
+- Issues #3 (real-GLPI integration coverage) and #5 (cross-session concurrency, partial writes, and active-model changes) are intentionally scheduled as post-beta-release hardening. Before Marketplace review, the maintainer group must review and accept these known limitations; do not claim full integration coverage or transactional guarantees in the meantime.

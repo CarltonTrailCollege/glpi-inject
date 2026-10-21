@@ -55,7 +55,7 @@ tar -tzf dist/glpiinject-<version>.tar.gz
 
 Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.php` runs the release workflow, validates the package root, and attaches the archive to a GitHub Release. The existing alpha.38 tag predates this workflow; alpha.40 established the corrected workflow. Update the version, catalog version entry, and download URL together for each release.
 
-The catalog manifest is metadata scaffolding only until the matching archive URL is live. Capture genuine screenshots from a supported GLPI instance and add them to the manifest before submitting it. Catalog listing and Marketplace approval are separate reviews.
+The beta catalog manifest, artwork, screenshots, and release archive are publicly available. A catalog listing must be accepted before Marketplace review can be requested; these are separate approvals tracked in [issue #6](https://github.com/CarltonTrailCollege/glpi-inject/issues/6). Real-GLPI integration coverage and cross-session import reliability are planned as post-release work; see [SECURITY.md](SECURITY.md) for the known limitations and reporting process.
 
 ## Quality checks
 
