@@ -94,9 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          if (!move_uploaded_file((string) $upload['tmp_name'], $directory . '/' . $filename)) {
              throw new \RuntimeException(__('The CSV file could not be stored.', 'glpiinject'));
          }
+          $uploaded_at = date('Y-m-d H:i:s');
           $uploaded_model = array_replace($model, [
               'id' => $model_id,
               'csv_file' => $filename,
+              'csv_uploaded_at' => $uploaded_at,
               'delimiter' => $delimiter,
               'file_encoding' => $encoding,
               'has_header' => isset($_POST['has_header']) ? 1 : 0,
@@ -106,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$model_item->update([
                'id' => $model_id,
                'csv_file' => $filename,
+               'csv_uploaded_at' => $uploaded_at,
                'delimiter' => $delimiter,
                'file_encoding' => $encoding,
                  'has_header' => $uploaded_model['has_header'],
@@ -251,6 +254,12 @@ if ($model !== null && $preview === null && !empty($model['csv_file']) && $error
    } catch (\Throwable $exception) {
        $error = $exception->getMessage();
    }
+}
+
+if ($model !== null) {
+    $model['csv_uploaded_at_display'] = !empty($model['csv_uploaded_at'])
+        ? Html::convDateTime($model['csv_uploaded_at'])
+        : null;
 }
 
 $models = [];

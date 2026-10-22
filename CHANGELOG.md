@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.10] - 2026-10-22
+
+### Added
+
+- Record and display the last successful CSV upload time for each import model.
+- Show existing CSV uploads as timestamp unavailable when their upload time predates timestamp tracking.
+
 ## [0.1.0-beta.9] - 2026-10-22
 
 ### Added

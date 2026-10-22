@@ -52,6 +52,7 @@ function plugin_glpiinject_install(): bool {
            'match_field' => ['string', ['null' => true]],
            'mappings' => ['text', ['null' => true]],
            'csv_file' => ['string', ['null' => true]],
+           'csv_uploaded_at' => ['datetime', ['null' => true]],
        ] as $field => [$type, $options]) {
          if (!$DB->fieldExists($table, $field)) {
              $migration->addField($table, $field, $type, $options);

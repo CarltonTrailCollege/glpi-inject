@@ -34,7 +34,7 @@
             <section class="border rounded p-3 mb-3">
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                     <div><h2 class="h3 mb-1">{{ model.name }}</h2><div class="text-muted">{{ model.itemtype }}</div></div>
-                    {% if model.csv_file %}<span class="badge bg-success text-dark fw-semibold px-3 py-2">{{ __('CSV loaded', 'glpiinject') }}</span>{% else %}<span class="badge bg-secondary">{{ __('Waiting for CSV', 'glpiinject') }}</span>{% endif %}
+                    {% if model.csv_file %}<div class="text-end"><span class="badge bg-success text-dark fw-semibold px-3 py-2">{{ __('CSV loaded', 'glpiinject') }}</span><div class="small text-muted mt-1">{{ __('Last uploaded', 'glpiinject') }}: {{ model.csv_uploaded_at_display ?? __('Upload time unavailable', 'glpiinject') }}</div></div>{% else %}<span class="badge bg-secondary">{{ __('Waiting for CSV', 'glpiinject') }}</span>{% endif %}
                 </div>
                 <form method="post" action="{{ root_doc }}/plugins/glpiinject/front/index.php?id={{ model.id }}" enctype="multipart/form-data" class="row g-3 align-items-end">
                     <input type="hidden" name="models_id" value="{{ model.id }}">
