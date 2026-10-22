@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.13] - 2026-10-22
+
+### Changed
+
+- Broaden CSV mapping suggestions with normalized token scoring and common cross-organization synonyms; show close candidates for manual review instead of guessing.
+- Cover realistic asset headers in regression tests while leaving organization-specific mappings unmatched.
+
 ## [0.1.0-beta.12] - 2026-10-22
 
 ### Added

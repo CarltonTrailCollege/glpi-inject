@@ -106,7 +106,7 @@
                                     <td>
                                         {% if mapping_suggestion.status == 'saved' %}<span class="text-muted">{{ __('Saved mapping', 'glpiinject') }}</span>
                                         {% elseif mapping_suggestion.status == 'suggested' %}<span class="text-success">{{ __('Suggested', 'glpiinject') }}: {{ mapping_suggestion.label }}</span>
-                                        {% elseif mapping_suggestion.status == 'ambiguous' %}<span class="text-warning">{{ __('Multiple matches; choose manually', 'glpiinject') }}</span>
+                                        {% elseif mapping_suggestion.status == 'ambiguous' %}<span class="text-warning">{{ __('Close matches; choose manually', 'glpiinject') }}{% if mapping_suggestion.candidate_labels is not empty %}: {{ mapping_suggestion.candidate_labels|join(', ') }}{% endif %}</span>
                                         {% else %}<span class="text-muted">{{ __('No match found', 'glpiinject') }}</span>{% endif %}
                                         <input type="hidden" data-suggestion-status="{{ mapping_suggestion.status }}" data-suggestion-option="{{ mapping_suggestion.option_index is not null ? mapping_suggestion.option_index : '' }}">
                                     </td>

@@ -62,7 +62,7 @@ Replace `/var/www/glpi` and `www-data` with values for your server. The GLPI con
 
 ### Suggestions and destinations
 
-Suggestions compare CSV headers with fields available for the selected asset type. Matching ignores case and punctuation and supports simple singular/plural variations. Suggestions are not saved automatically; **Apply suggestions** fills eligible dropdowns, and **Save mapping** persists the reviewed choices.
+Suggestions compare CSV headers with fields available for the selected asset type. Matching ignores case and punctuation, handles word-order and singular/plural differences, and recognizes common terminology such as owner/user, vendor/supplier, description/comments, and purchase cost/value. It scores the header against each available destination; close or tied candidates are shown for manual selection instead of guessed. Organization-specific terms (for example, a department code that represents a budget in one organization) still need to be mapped manually. Suggestions are not saved automatically; **Apply suggestions** fills only clear, eligible matches, and **Save mapping** persists the reviewed choices.
 
 The selected mapping option also determines the GLPI destination. For linked fields such as Location, User, Budget, and Supplier, the importer resolves the reference and stores its ID in the appropriate relation field. Budget and Supplier values are stored in the asset's financial information (Infocom).
 

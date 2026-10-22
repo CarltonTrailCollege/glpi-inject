@@ -342,6 +342,33 @@ namespace {
     assert($mapping_suggestions[5]['status'] === 'suggested');
     assert($mapping_suggestions[5]['option_index'] === 1);
 
+    $realistic_mapping_options = [
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Furniture', 'field' => 'name', 'linkfield' => 'name', 'label' => 'Furniture -> Name', 'is_relation' => false],
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Furniture', 'field' => 'comment', 'linkfield' => 'comment', 'label' => 'Furniture -> Comments', 'is_relation' => false],
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Furniture type', 'field' => 'type', 'linkfield' => 'assets_assettypes_id', 'label' => 'Furniture type -> Type', 'is_relation' => true],
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Location', 'field' => 'name', 'linkfield' => 'locations_id', 'label' => 'Location -> Location', 'is_relation' => true],
+        ['itemtype' => Infocom::class, 'itemtype_label' => 'Financial and administrative information', 'field' => 'value', 'linkfield' => '__infocom', 'label' => 'Financial and administrative information -> Value', 'is_infocom' => true],
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Furniture', 'field' => 'serial', 'linkfield' => 'serial', 'label' => 'Furniture -> Serial Number', 'is_relation' => false],
+        ['itemtype' => TestManufacturer::class, 'itemtype_label' => 'Manufacturer', 'field' => 'name', 'linkfield' => 'manufacturers_id', 'label' => 'Manufacturer -> Manufacturer', 'is_relation' => true],
+        ['itemtype' => TestAsset::class, 'itemtype_label' => 'Furniture model', 'field' => 'name', 'linkfield' => 'assets_assetmodels_id', 'label' => 'Furniture model -> Model', 'is_relation' => true],
+        ['itemtype' => Infocom::class, 'itemtype_label' => 'Financial and administrative information', 'field' => 'order_number', 'linkfield' => '__infocom', 'label' => 'Financial and administrative information -> Order Number', 'is_infocom' => true],
+        ['itemtype' => Infocom::class, 'itemtype_label' => 'Financial and administrative information', 'field' => 'buy_date', 'linkfield' => '__infocom', 'label' => 'Financial and administrative information -> Date of Purchase', 'is_infocom' => true],
+        ['itemtype' => Supplier::class, 'itemtype_label' => 'Supplier', 'field' => 'name', 'linkfield' => 'suppliers_id', 'label' => 'Supplier -> Supplier', 'is_relation' => true],
+        ['itemtype' => User::class, 'itemtype_label' => 'User', 'field' => 'name', 'linkfield' => 'users_id', 'label' => 'User -> User', 'is_relation' => true],
+        ['itemtype' => Infocom::class, 'itemtype_label' => 'Financial and administrative information', 'field' => 'date_last_inventory', 'linkfield' => '__infocom', 'label' => 'Financial and administrative information -> Date of last physical inventory', 'is_infocom' => true],
+    ];
+    $realistic_headers = [
+        'Asset Tag', 'Asset Description', 'Asset Type', 'Location', 'Department Code',
+        'Purchase Cost', 'Serial Number', 'Manufacturer', 'Model', 'Purchase Order',
+        'Purchase Date', 'Vendor Name', 'Owner Name', 'Warranty Provider', 'Last Audit Date',
+    ];
+    $realistic_suggestions = MappingSuggester::suggest($realistic_headers, $realistic_mapping_options, []);
+    foreach ([0 => 0, 1 => 1, 2 => 2, 3 => 3, 5 => 4, 6 => 5, 7 => 6, 8 => 7, 9 => 8, 10 => 9, 11 => 10, 12 => 11, 13 => 10, 14 => 12] as $column => $option_index) {
+        assert($realistic_suggestions[$column]['status'] === 'suggested');
+        assert($realistic_suggestions[$column]['option_index'] === $option_index);
+    }
+    assert($realistic_suggestions[4]['status'] === 'unmatched');
+
     $service = new CsvImportService();
     $model = [
         'csv_file' => 'sample.csv',
