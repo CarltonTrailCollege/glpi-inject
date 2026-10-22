@@ -145,8 +145,8 @@
                             <button class="btn btn-success" name="action" value="run_import" type="submit" onclick="return window.confirm({{ __('Watch out, you are about to inject data into GLPI. Are you sure you want to do it?', 'glpiinject')|json_encode }});" {{ model.mappings is empty ? 'disabled' : '' }}>{{ __('Launch the import', 'glpiinject') }}</button>
                         </form>
                     </div>
-                    <div class="table-responsive preview-table-scroll" tabindex="0" role="region" aria-label="{{ __('CSV preview data', 'glpiinject') }}"><table class="table table-sm table-striped" id="preview-table"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th data-preview-column="{{ loop.index0 }}">{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
-                        {% for record in preview.records %}<tr><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td data-preview-column="{{ loop.index0 }}" aria-label="{{ header }}">{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}<td>{% if record.valid %}<span class="badge bg-success">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger">{{ record.errors|join('; ') }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="{{ preview.headers|length + 2 }}" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
+                    <div class="table-responsive preview-table-scroll" tabindex="0" role="region" aria-label="{{ __('CSV preview data', 'glpiinject') }}"><table class="table table-sm table-striped" id="preview-table"><thead><tr><th scope="col">{{ __('Validation', 'glpiinject') }}</th><th scope="col">{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th data-preview-column="{{ loop.index0 }}">{{ header }}</th>{% endfor %}</tr></thead><tbody>
+                        {% for record in preview.records %}<tr><td class="preview-validation-cell">{% if record.valid %}<span class="badge bg-success text-wrap">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger text-wrap">{{ record.errors|join('; ') }}</span>{% endif %}</td><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td data-preview-column="{{ loop.index0 }}" aria-label="{{ header }}">{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="{{ preview.headers|length + 2 }}" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
                     </tbody></table></div>
                 </section>
             {% endif %}
@@ -175,7 +175,7 @@ if (previewColumns) {
     const columnStyle = document.createElement('style');
     document.head.appendChild(columnStyle);
     const resizeStyle = document.createElement('style');
-    resizeStyle.textContent = '.preview-table-scroll { max-width: 100%; overflow-x: auto; } #preview-table { width: max-content; min-width: 100%; table-layout: fixed; } #preview-table th, #preview-table td { overflow-wrap: anywhere; } #preview-table thead th { position: relative; padding-inline-end: 1.25rem; } .preview-column-resizer { position: absolute; inset-block: 0; inset-inline-end: 0; width: 12px; cursor: col-resize; touch-action: none; user-select: none; } .preview-column-resizer::after { content: ""; position: absolute; inset-block: 25%; inset-inline-start: 5px; border-inline-start: 2px solid var(--bs-border-color); } .preview-column-resizer:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }';
+    resizeStyle.textContent = '.preview-table-scroll { max-width: 100%; overflow-x: auto; } #preview-table { width: max-content; min-width: 100%; table-layout: fixed; } #preview-table th, #preview-table td { overflow-wrap: anywhere; } #preview-table thead th { position: relative; padding-inline-end: 1.25rem; } #preview-table th:first-child, #preview-table td:first-child { position: sticky; inset-inline-start: 0; z-index: 2; min-width: 220px; max-width: 280px; white-space: normal; background-color: var(--bs-body-bg); } #preview-table thead th:first-child { z-index: 3; } .preview-column-resizer { position: absolute; inset-block: 0; inset-inline-end: 0; width: 12px; cursor: col-resize; touch-action: none; user-select: none; } .preview-column-resizer::after { content: ""; position: absolute; inset-block: 25%; inset-inline-start: 5px; border-inline-start: 2px solid var(--bs-border-color); } .preview-column-resizer:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }';
     document.head.appendChild(resizeStyle);
     const previewTable = document.getElementById('preview-table');
     const previewHeaders = Array.from(previewTable.querySelectorAll('thead th'));
@@ -206,7 +206,7 @@ if (previewColumns) {
     previewHeaders.forEach((header, index) => {
         const initialWidth = widthsMatch && Number.isFinite(savedWidths.widths[index])
             ? savedWidths.widths[index]
-            : index === 0 ? 96 : index === previewHeaders.length - 1 ? 240 : Math.min(320, Math.max(140, header.scrollWidth + 16));
+            : index === 0 ? 240 : index === 1 ? 72 : Math.min(320, Math.max(140, header.scrollWidth + 16));
         const resizer = document.createElement('span');
         resizer.className = 'preview-column-resizer';
         resizer.setAttribute('role', 'separator');
@@ -254,7 +254,7 @@ if (previewColumns) {
     } catch (_) {}
     const updatePreviewColumns = () => {
         const hidden = toggles.filter((toggle) => !toggle.checked).map((toggle) => Number(toggle.value));
-        columnStyle.textContent = hidden.map((column) => `#preview-table [data-preview-column="${column}"], #preview-table col:nth-child(${column + 2}) { display: none; }`).join('\n');
+        columnStyle.textContent = hidden.map((column) => `#preview-table [data-preview-column="${column}"], #preview-table col:nth-child(${column + 3}) { display: none; }`).join('\n');
         try {
             sessionStorage.setItem(storageKey, JSON.stringify({headers, hidden}));
         } catch (_) {}
