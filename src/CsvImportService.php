@@ -11,9 +11,9 @@ final class CsvImportService
    public const PREVIEW_SIZES = [1, 10, 50, 100, 500, 1000, 10000];
 
    public function preview(array $model, array $target, int $result_size = 10): array {
-       if (!in_array($result_size, self::PREVIEW_SIZES, true)) {
-           throw new \InvalidArgumentException(__('Choose a supported preview result size.', 'glpiinject'));
-       }
+      if (!in_array($result_size, self::PREVIEW_SIZES, true)) {
+          throw new \InvalidArgumentException(__('Choose a supported preview result size.', 'glpiinject'));
+      }
        $records = [];
        $count = 0;
 
@@ -349,19 +349,19 @@ final class CsvImportService
                  ? getEntitiesRestrictCriteria($related_item::getTable(), '', (int) $model['entities_id'], true)
                  : [];
              $related_found = false;
-             if ($related_item instanceof CommonTreeDropdown && $mapping['field'] !== 'completename') {
-                 $related_found = $this->loadUniqueReference($related_item, ['completename' => $value] + $entity_criteria, $value);
-             }
-             if (!$related_found) {
-                 $related_found = $this->loadUniqueReference($related_item, [$mapping['field'] => $value] + $entity_criteria, $value);
-             }
-             if (!$related_found && $related_itemtype === \User::class && $mapping['field'] === 'name') {
-                 $matched_user = $this->findUserByFullName($value);
-                 if ($matched_user !== null) {
-                     $related_item = $matched_user;
-                     $related_found = true;
-                 }
-             }
+            if ($related_item instanceof CommonTreeDropdown && $mapping['field'] !== 'completename') {
+                $related_found = $this->loadUniqueReference($related_item, ['completename' => $value] + $entity_criteria, $value);
+            }
+            if (!$related_found) {
+                $related_found = $this->loadUniqueReference($related_item, [$mapping['field'] => $value] + $entity_criteria, $value);
+            }
+            if (!$related_found && $related_itemtype === \User::class && $mapping['field'] === 'name') {
+                $matched_user = $this->findUserByFullName($value);
+               if ($matched_user !== null) {
+                   $related_item = $matched_user;
+                   $related_found = true;
+               }
+            }
             if ($related_found && !$related_item->canViewItem()) {
                 throw new \RuntimeException(__('You do not have permission to read the referenced item.', 'glpiinject'));
             }
@@ -379,11 +379,11 @@ final class CsvImportService
                      if (!$related_item->canViewItem()) {
                          throw new \RuntimeException(__('You do not have permission to read the referenced item.', 'glpiinject'));
                      }
-                      if (!empty($mapping['is_infocom'])) {
-                          $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
-                      } else {
-                          $values[$mapping['linkfield']] = $related_item->getID();
-                      }
+                     if (!empty($mapping['is_infocom'])) {
+                         $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
+                     } else {
+                         $values[$mapping['linkfield']] = $related_item->getID();
+                     }
                       continue;
                   }
                    $dropdown_input = [
@@ -407,11 +407,11 @@ final class CsvImportService
                     ));
                }
             }
-             if (!empty($mapping['is_infocom'])) {
-                 $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
-             } else {
-                 $values[$mapping['linkfield']] = $related_item->getID();
-             }
+            if (!empty($mapping['is_infocom'])) {
+                $values['_infocom'][$mapping['linkfield']] = $related_item->getID();
+            } else {
+                $values[$mapping['linkfield']] = $related_item->getID();
+            }
          } else {
              $values[$mapping['linkfield']] = $this->formatValue($value, $mapping, $model);
          }
@@ -422,13 +422,13 @@ final class CsvImportService
 
    private function loadUniqueReference(CommonDBTM $item, array $criteria, string $value): bool {
        $matches = $item->find($criteria, [], 2);
-       if (count($matches) > 1) {
-           throw new \RuntimeException(sprintf(
-               __('Multiple %1$s records match "%2$s". Use a unique identifier or the full hierarchy path for tree dropdowns; no new record was created.', 'glpiinject'),
-               $item::getTypeName(1),
-               $value
-           ));
-       }
+      if (count($matches) > 1) {
+          throw new \RuntimeException(sprintf(
+              __('Multiple %1$s records match "%2$s". Use a unique identifier or the full hierarchy path for tree dropdowns; no new record was created.', 'glpiinject'),
+              $item::getTypeName(1),
+              $value
+          ));
+      }
        return $matches !== [] && $item->getFromDB((int) array_key_first($matches));
    }
 
@@ -436,30 +436,30 @@ final class CsvImportService
        global $DB;
 
        $parts = preg_split('/\s+/u', trim($value));
-       if ($parts === false || count($parts) < 2) {
-           return null;
-       }
+      if ($parts === false || count($parts) < 2) {
+          return null;
+      }
        $alternatives = [];
-       for ($boundary = 1; $boundary < count($parts); $boundary++) {
-           $alternatives[] = [
-               'firstname' => implode(' ', array_slice($parts, 0, $boundary)),
-               'realname' => implode(' ', array_slice($parts, $boundary)),
-           ];
-       }
+      for ($boundary = 1; $boundary < count($parts); $boundary++) {
+          $alternatives[] = [
+              'firstname' => implode(' ', array_slice($parts, 0, $boundary)),
+              'realname' => implode(' ', array_slice($parts, $boundary)),
+          ];
+      }
        $matches = [];
-       foreach ($DB->request([
+      foreach ($DB->request([
            'SELECT' => ['id'],
            'FROM' => \User::getTable(),
            'WHERE' => ['is_deleted' => 0, 'OR' => $alternatives],
        ]) as $row) {
-           $candidate = new \User();
-           if ($candidate->getFromDB((int) $row['id']) && $candidate->canViewItem()) {
-               $matches[$candidate->getID()] = $candidate;
-               if (count($matches) > 1) {
-                   throw new \RuntimeException(__('Multiple accessible users match this full name. Use the GLPI username instead.', 'glpiinject'));
-               }
-           }
-       }
+          $candidate = new \User();
+         if ($candidate->getFromDB((int) $row['id']) && $candidate->canViewItem()) {
+             $matches[$candidate->getID()] = $candidate;
+            if (count($matches) > 1) {
+               throw new \RuntimeException(__('Multiple accessible users match this full name. Use the GLPI username instead.', 'glpiinject'));
+            }
+         }
+      }
        return $matches === [] ? null : reset($matches);
    }
 

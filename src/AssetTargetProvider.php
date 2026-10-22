@@ -278,23 +278,23 @@ final class AssetTargetProvider
           ];
       }
 
-       if (count(array_filter($options, static fn (array $option) => !empty($option['is_infocom']))) > 0) {
-           foreach ([\Budget::class => 'budgets_id', \Supplier::class => 'suppliers_id'] as $reference_type => $reference_field) {
-               $reference_label = $reference_type::getTypeName(1);
-               $options[] = [
-                   'itemtype' => $reference_type,
-                   'itemtype_label' => \Infocom::getTypeName(1),
-                   'field' => 'name',
-                   'linkfield' => $reference_field,
-                   'label' => sprintf('%s -> %s', \Infocom::getTypeName(1), $reference_label),
-                   'table' => $reference_type::getTable(),
-                   'is_custom' => false,
-                   'is_relation' => true,
-                   'is_infocom' => true,
-                   'datatype' => 'string',
-               ];
-           }
-       }
+      if (count(array_filter($options, static fn (array $option) => !empty($option['is_infocom']))) > 0) {
+         foreach ([\Budget::class => 'budgets_id', \Supplier::class => 'suppliers_id'] as $reference_type => $reference_field) {
+             $reference_label = $reference_type::getTypeName(1);
+             $options[] = [
+                 'itemtype' => $reference_type,
+                 'itemtype_label' => \Infocom::getTypeName(1),
+                 'field' => 'name',
+                 'linkfield' => $reference_field,
+                 'label' => sprintf('%s -> %s', \Infocom::getTypeName(1), $reference_label),
+                 'table' => $reference_type::getTable(),
+                 'is_custom' => false,
+                 'is_relation' => true,
+                 'is_infocom' => true,
+                 'datatype' => 'string',
+             ];
+         }
+      }
 
        return $options;
    }

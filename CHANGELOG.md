@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-beta.8] - 2026-10-21
+
+### Fixed
+
+- Correct 32 GLPI coding-standard indentation violations in the importer and mapping provider using the locked PHPCBF tool; no import behavior changes.
+- Verify PHP coding standards, Twig and inline JavaScript lint, GLPI-backed static analysis, and both regression suites locally.
+
 ## [0.1.0-beta.7] - 2026-10-21
 
 ### Changed
