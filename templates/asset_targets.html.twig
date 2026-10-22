@@ -132,7 +132,7 @@
                             <button class="btn btn-success" name="action" value="run_import" type="submit" onclick="return window.confirm({{ __('Watch out, you are about to inject data into GLPI. Are you sure you want to do it?', 'glpiinject')|json_encode }});" {{ model.mappings is empty ? 'disabled' : '' }}>{{ __('Launch the import', 'glpiinject') }}</button>
                         </form>
                     </div>
-                    <div class="table-responsive"><table class="table table-sm table-striped" id="preview-table"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th data-preview-column="{{ loop.index0 }}">{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
+                    <div class="table-responsive preview-table-scroll" tabindex="0" role="region" aria-label="{{ __('CSV preview data', 'glpiinject') }}"><table class="table table-sm table-striped" id="preview-table"><thead><tr><th>{{ __('Line', 'glpiinject') }}</th>{% for header in preview.headers %}<th data-preview-column="{{ loop.index0 }}">{{ header }}</th>{% endfor %}<th>{{ __('Validation', 'glpiinject') }}</th></tr></thead><tbody>
                         {% for record in preview.records %}<tr><th scope="row">{{ record.line }}</th>{% for header in preview.headers %}<td data-preview-column="{{ loop.index0 }}" aria-label="{{ header }}">{{ record.values[loop.index0] ?? '' }}</td>{% endfor %}<td>{% if record.valid %}<span class="badge bg-success">{{ __('Valid', 'glpiinject') }}</span>{% else %}<span class="badge bg-danger">{{ record.errors|join('; ') }}</span>{% endif %}</td></tr>{% else %}<tr><td colspan="{{ preview.headers|length + 2 }}" class="text-muted">{{ __('No data rows found.', 'glpiinject') }}</td></tr>{% endfor %}
                     </tbody></table></div>
                 </section>
@@ -161,6 +161,78 @@ if (previewColumns) {
     const storageKey = `glpiinject-preview-columns:${window.location.pathname}:${previewColumns.dataset.modelId}`;
     const columnStyle = document.createElement('style');
     document.head.appendChild(columnStyle);
+    const resizeStyle = document.createElement('style');
+    resizeStyle.textContent = '.preview-table-scroll { max-width: 100%; overflow-x: auto; } #preview-table { width: max-content; min-width: 100%; table-layout: fixed; } #preview-table th, #preview-table td { overflow-wrap: anywhere; } #preview-table thead th { position: relative; padding-inline-end: 1.25rem; } .preview-column-resizer { position: absolute; inset-block: 0; inset-inline-end: 0; width: 12px; cursor: col-resize; touch-action: none; user-select: none; } .preview-column-resizer::after { content: ""; position: absolute; inset-block: 25%; inset-inline-start: 5px; border-inline-start: 2px solid var(--bs-border-color); } .preview-column-resizer:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -2px; }';
+    document.head.appendChild(resizeStyle);
+    const previewTable = document.getElementById('preview-table');
+    const previewHeaders = Array.from(previewTable.querySelectorAll('thead th'));
+    const previewHeaderLabels = previewHeaders.map((header) => header.textContent.trim());
+    const resizeStorageKey = `glpiinject-preview-widths:${window.location.pathname}:${previewColumns.dataset.modelId}`;
+    const columnGroup = document.createElement('colgroup');
+    const columnElements = previewHeaders.map(() => document.createElement('col'));
+    columnElements.forEach((column) => columnGroup.appendChild(column));
+    previewTable.insertBefore(columnGroup, previewTable.firstChild);
+    const setColumnWidth = (index, width) => {
+        const normalizedWidth = Math.max(72, Math.round(width));
+        columnElements[index].style.width = `${normalizedWidth}px`;
+        previewHeaders[index].querySelector('.preview-column-resizer').setAttribute('aria-valuenow', String(normalizedWidth));
+    };
+    const saveColumnWidths = () => {
+        try {
+            sessionStorage.setItem(resizeStorageKey, JSON.stringify({headers: previewHeaderLabels, widths: columnElements.map((column) => Number.parseFloat(column.style.width))}));
+        } catch (_) {}
+    };
+    let savedWidths = null;
+    try {
+        savedWidths = JSON.parse(sessionStorage.getItem(resizeStorageKey));
+    } catch (_) {}
+    const widthsMatch = savedWidths
+        && JSON.stringify(savedWidths.headers) === JSON.stringify(previewHeaderLabels)
+        && Array.isArray(savedWidths.widths)
+        && savedWidths.widths.length === columnElements.length;
+    previewHeaders.forEach((header, index) => {
+        const initialWidth = widthsMatch && Number.isFinite(savedWidths.widths[index])
+            ? savedWidths.widths[index]
+            : index === 0 ? 96 : index === previewHeaders.length - 1 ? 240 : Math.min(320, Math.max(140, header.scrollWidth + 16));
+        const resizer = document.createElement('span');
+        resizer.className = 'preview-column-resizer';
+        resizer.setAttribute('role', 'separator');
+        resizer.setAttribute('aria-orientation', 'vertical');
+        resizer.setAttribute('aria-label', `{{ __('Resize column', 'glpiinject')|e('js') }}: ${previewHeaderLabels[index]}`);
+        resizer.setAttribute('aria-valuemin', '72');
+        resizer.setAttribute('aria-valuenow', String(initialWidth));
+        resizer.tabIndex = 0;
+        header.appendChild(resizer);
+        setColumnWidth(index, initialWidth);
+        let dragStartX = 0;
+        let dragStartWidth = 0;
+        resizer.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            dragStartX = event.clientX;
+            dragStartWidth = columnElements[index].getBoundingClientRect().width;
+            resizer.setPointerCapture(event.pointerId);
+        });
+        resizer.addEventListener('pointermove', (event) => {
+            if (!resizer.hasPointerCapture(event.pointerId)) return;
+            setColumnWidth(index, dragStartWidth + event.clientX - dragStartX);
+        });
+        const finishResize = (event) => {
+            if (!resizer.hasPointerCapture(event.pointerId)) return;
+            resizer.releasePointerCapture(event.pointerId);
+            saveColumnWidths();
+        };
+        resizer.addEventListener('pointerup', finishResize);
+        resizer.addEventListener('pointercancel', finishResize);
+        resizer.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+            event.preventDefault();
+            const direction = event.key === 'ArrowRight' ? 1 : -1;
+            const step = event.shiftKey ? 40 : 10;
+            setColumnWidth(index, columnElements[index].getBoundingClientRect().width + direction * step);
+            saveColumnWidths();
+        });
+    });
     try {
         const saved = JSON.parse(sessionStorage.getItem(storageKey));
         if (saved && JSON.stringify(saved.headers) === JSON.stringify(headers) && Array.isArray(saved.hidden)) {
@@ -169,7 +241,7 @@ if (previewColumns) {
     } catch (_) {}
     const updatePreviewColumns = () => {
         const hidden = toggles.filter((toggle) => !toggle.checked).map((toggle) => Number(toggle.value));
-        columnStyle.textContent = hidden.map((column) => `#preview-table [data-preview-column="${column}"] { display: none; }`).join('\n');
+        columnStyle.textContent = hidden.map((column) => `#preview-table [data-preview-column="${column}"], #preview-table col:nth-child(${column + 2}) { display: none; }`).join('\n');
         try {
             sessionStorage.setItem(storageKey, JSON.stringify({headers, hidden}));
         } catch (_) {}
