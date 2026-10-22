@@ -27,6 +27,8 @@ This is an in-process GLPI plugin. It does not require an external REST API toke
 4. Preview and validate rows, including required fields and duplicate matching.
 5. Run the import and review per-row success and error results.
 
+The mapping table suggests destinations when a CSV header matches an available field name after normalizing case, punctuation, and common singular/plural forms. Apply suggestions fills only blank mappings; saved or manually selected mappings are left alone. Ambiguous and unmatched headers are identified for manual review, and suggestions are not saved until Save mapping is selected.
+
 Preview Result Size supports 1, 10, 50, 100, 500, 1000, or 10000 rows (default 10), remembered for the current session. Changing the selection refreshes preview only; imports still process the full CSV. Large previews may take longer to validate and render.
 
 Preview validation covers only the displayed rows and reflects the database at preview time. Referenced dropdowns must resolve uniquely within the applicable entity scope. Tree dropdowns such as Locations try an exact full hierarchy path before a leaf-name lookup. Ambiguous references fail without selecting an arbitrary record or creating another duplicate; provide a unique full path or reconcile duplicate records in GLPI.

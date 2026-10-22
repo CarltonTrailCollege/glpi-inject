@@ -72,8 +72,12 @@
                         <div class="row g-3 mb-3">
                             <div class="col-12 col-md-4"><label class="form-label" for="match-field">{{ __('Update matching records by', 'glpiinject') }}</label><select class="form-select" id="match-field" name="match_field" required>{% for field in targets[model.itemtype].fields %}{% if not field.is_custom %}<option value="{{ field.field }}" {{ (model.match_field|default('name', true)) == field.field ? 'selected' : '' }}>{{ field.name }}</option>{% endif %}{% endfor %}</select></div>
                         </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <button class="btn btn-outline-secondary" type="button" data-apply-mapping-suggestions>{{ __('Apply suggestions', 'glpiinject') }}</button>
+                            <span class="form-text mb-0">{{ __('Suggestions are based on matching CSV headers to available fields. Review them before saving; saved or manually selected mappings are left unchanged.', 'glpiinject') }}</span>
+                        </div>
                         <p class="form-text">{{ __('For mapped columns, check Required when every imported row must have a value. Blank values in required columns fail row validation.', 'glpiinject') }}</p>
-                        <div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead><tr><th>{{ __('Header of the file', 'glpiinject') }}</th><th>{{ __('Tables', 'glpiinject') }}</th><th>{{ _n('Field', 'Fields', 2) }}</th><th>{{ __('Link field', 'glpiinject') }}</th><th>{{ __('Required', 'glpiinject') }}</th></tr></thead><tbody>
+                        <div class="table-responsive"><table class="table table-striped table-hover align-middle"><thead><tr><th>{{ __('Header of the file', 'glpiinject') }}</th><th>{{ __('Tables', 'glpiinject') }}</th><th>{{ _n('Field', 'Fields', 2) }}</th><th>{{ __('Suggestion', 'glpiinject') }}</th><th>{{ __('Link field', 'glpiinject') }}</th><th>{{ __('Required', 'glpiinject') }}</th></tr></thead><tbody>
                             {% for header in preview.headers %}
                                 {% set column_index = loop.index0 %}
                                 {% set saved_mapping = model.mappings[column_index] ?? {} %}
@@ -86,17 +90,25 @@
                                         {% set selected_option = option %}
                                     {% endif %}
                                 {% endfor %}
+                                {% set mapping_suggestion = mapping_suggestions[column_index] ?? {status: 'unmatched', label: '', option_index: null} %}
                                 <tr>
                                     <th scope="row">{{ header }}</th>
                                     <td class="mapping-type" data-column="{{ column_index }}">{{ selected_option.itemtype_label ?? __('Choose a table', 'glpiinject') }}</td>
                                     <td>
-                                        <select class="form-select mapping-option" data-column="{{ column_index }}" name="mapping[{{ column_index }}][option]">
+                                        <select class="form-select mapping-option" data-column="{{ column_index }}" data-saved-mapping="{{ selected_option ? '1' : '0' }}" name="mapping[{{ column_index }}][option]">
                                             <option value="">{{ __('Do not import', 'glpiinject') }}</option>
                                             {% for option in targets[model.itemtype].mapping_options %}
                                                 {% set option_index = loop.index0 %}
                                                 <option value="{{ option_index }}" data-type="{{ option.itemtype_label }}" data-field="{{ option.field }}" data-linkfield="{{ option.linkfield }}" {{ selected_option and selected_option.itemtype == option.itemtype and selected_option.field == option.field and selected_option.linkfield == option.linkfield ? 'selected' : '' }}>{{ option.label }}</option>
                                             {% endfor %}
                                         </select>
+                                    </td>
+                                    <td>
+                                        {% if mapping_suggestion.status == 'saved' %}<span class="text-muted">{{ __('Saved mapping', 'glpiinject') }}</span>
+                                        {% elseif mapping_suggestion.status == 'suggested' %}<span class="text-success">{{ __('Suggested', 'glpiinject') }}: {{ mapping_suggestion.label }}</span>
+                                        {% elseif mapping_suggestion.status == 'ambiguous' %}<span class="text-warning">{{ __('Multiple matches; choose manually', 'glpiinject') }}</span>
+                                        {% else %}<span class="text-muted">{{ __('No match found', 'glpiinject') }}</span>{% endif %}
+                                        <input type="hidden" data-suggestion-status="{{ mapping_suggestion.status }}" data-suggestion-option="{{ mapping_suggestion.option_index is not null ? mapping_suggestion.option_index : '' }}">
                                     </td>
                                     <td><code class="mapping-linkfield" data-column="{{ column_index }}">{{ selected_option.linkfield ?? '—' }}</code></td>
                                     <td class="text-center"><input class="form-check-input" type="checkbox" name="mapping[{{ column_index }}][is_mandatory]" value="1" {{ saved_mapping.is_mandatory ?? false ? 'checked' : '' }} aria-label="{{ __('Require a CSV value for', 'glpiinject') }} {{ header }}"></td>
@@ -275,6 +287,16 @@ document.querySelectorAll('.mapping-option').forEach((select) => {
         const column = select.dataset.column;
         document.querySelector(`.mapping-type[data-column="${column}"]`).textContent = selected.dataset.type || '{{ __('Choose a table', 'glpiinject')|e('js') }}';
         document.querySelector(`.mapping-linkfield[data-column="${column}"]`).textContent = selected.dataset.linkfield || '—';
+    });
+});
+
+document.querySelector('[data-apply-mapping-suggestions]')?.addEventListener('click', () => {
+    document.querySelectorAll('.mapping-option').forEach((select) => {
+        if (select.dataset.savedMapping === '1' || select.value !== '') return;
+        const suggestion = select.closest('tr').querySelector('[data-suggestion-status]');
+        if (suggestion.dataset.suggestionStatus !== 'suggested') return;
+        select.value = suggestion.dataset.suggestionOption;
+        select.dispatchEvent(new Event('change', {bubbles: true}));
     });
 });
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-beta.12] - 2026-10-22
+
+### Added
+
+- Suggest CSV field mappings from available asset fields, with explicit review and handling for ambiguous and unmatched headers.
+
 ## [0.1.0-beta.11] - 2026-10-22
 
 ### Changed

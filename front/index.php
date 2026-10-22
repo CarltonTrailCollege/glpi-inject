@@ -6,6 +6,7 @@ use GlpiPlugin\Glpiinject\CsvImportService;
 use GlpiPlugin\Glpiinject\ImportModel;
 use GlpiPlugin\Glpiinject\ImportRun;
 use GlpiPlugin\Glpiinject\ImportRunLog;
+use GlpiPlugin\Glpiinject\MappingSuggester;
 
 include('../../../inc/includes.php');
 
@@ -28,6 +29,7 @@ $import_results = null;
 $selected_run = null;
 $error = null;
 $mapping_saved = false;
+$mapping_suggestions = [];
 $scroll_to_preview = false;
 $model_item = new ImportModel();
 $model = null;
@@ -260,6 +262,16 @@ if ($model !== null) {
     $model['csv_uploaded_at_display'] = !empty($model['csv_uploaded_at'])
         ? Html::convDateTime($model['csv_uploaded_at'])
         : null;
+   if ($preview !== null) {
+       $suggestion_target = $provider->getTarget((string) $model['itemtype']);
+      if ($suggestion_target !== null) {
+          $mapping_suggestions = MappingSuggester::suggest(
+              $preview['headers'],
+              $suggestion_target['mapping_options'],
+              $model['mappings']
+          );
+      }
+   }
 }
 
 $models = [];
@@ -286,6 +298,7 @@ TemplateRenderer::getInstance()->display('@glpiinject/asset_targets.html.twig', 
     'csrf_token' => Session::getNewCSRFToken(),
     'error' => $error,
     'mapping_saved' => $mapping_saved,
+    'mapping_suggestions' => $mapping_suggestions,
     'scroll_to_preview' => $scroll_to_preview,
     'preview_size' => $preview_size,
     'preview_sizes' => CsvImportService::PREVIEW_SIZES,

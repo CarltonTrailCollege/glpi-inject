@@ -313,10 +313,34 @@ namespace {
     }
 
     require_once dirname(__DIR__) . '/src/CsvImportService.php';
+    require_once dirname(__DIR__) . '/src/MappingSuggester.php';
 }
 
 namespace {
     use GlpiPlugin\Glpiinject\CsvImportService;
+    use GlpiPlugin\Glpiinject\MappingSuggester;
+
+    $suggestion_options = [
+        ['itemtype' => TestAsset::class, 'field' => 'name', 'linkfield' => 'name', 'label' => 'Test asset -> Name'],
+        ['itemtype' => TestAsset::class, 'field' => 'custom_inventory_code', 'linkfield' => 'custom_inventory_code', 'label' => 'Test asset -> Inventory code'],
+        ['itemtype' => TestAsset::class, 'field' => 'comment', 'linkfield' => 'comment', 'label' => 'Test asset -> Comments'],
+        ['itemtype' => TestManufacturer::class, 'field' => 'name', 'linkfield' => 'manufacturers_id', 'label' => 'Manufacturer -> Name'],
+    ];
+    $mapping_suggestions = MappingSuggester::suggest(
+        ['Name', 'Inventory-Code', 'Comments', 'Owner', 'Name', 'Inventory Codes'],
+        $suggestion_options,
+        [0 => ['itemtype' => TestAsset::class, 'field' => 'comment', 'linkfield' => 'comment']]
+    );
+    assert($mapping_suggestions[0]['status'] === 'saved');
+    assert($mapping_suggestions[0]['option_index'] === 2);
+    assert($mapping_suggestions[1]['status'] === 'suggested');
+    assert($mapping_suggestions[1]['option_index'] === 1);
+    assert($mapping_suggestions[2]['status'] === 'suggested');
+    assert($mapping_suggestions[3]['status'] === 'unmatched');
+    assert($mapping_suggestions[4]['status'] === 'ambiguous');
+    assert($mapping_suggestions[4]['candidate_count'] === 2);
+    assert($mapping_suggestions[5]['status'] === 'suggested');
+    assert($mapping_suggestions[5]['option_index'] === 1);
 
     $service = new CsvImportService();
     $model = [
