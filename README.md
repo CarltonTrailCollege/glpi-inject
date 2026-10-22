@@ -1,77 +1,94 @@
 # GLPI Inject
 
-GLPI Inject is a GLPI 11 plugin for reusable CSV import models. It is intended to preserve the model, upload, field-mapping, validation, import, and result-report workflow of the Data Injection plugin while supporting GLPI custom asset types.
+Import CSV data into standard and custom GLPI assets with reusable import models. GLPI Inject helps administrators map, preview, validate, and run imports while using GLPI's own item APIs and permissions.
 
-**Current release:** `0.1.0-beta.8` (beta; some integration coverage and import-reliability hardening remain planned).
+**Latest release:** [0.1.0-beta.12](https://github.com/CarltonTrailCollege/glpi-inject/releases/tag/v0.1.0-beta.12) · **Status:** Beta
 
-See [SECURITY.md](SECURITY.md) for the source-review scope, security controls, validation, and remaining production hardening work.
+> Beta software: real-installation integration coverage and cross-session import reliability are still limited. Review [known limitations](#beta-status-and-limitations) before using it for operational data.
 
-The plugin is licensed under [GPL-2.0-or-later](LICENSE). The GLPI catalog metadata is in [glpiinject.xml](glpiinject.xml).
+## At a glance
 
-## Compatibility
+- Reusable models for standard assets and active GLPI custom asset types.
+- CSV upload with delimiter, header, and encoding options.
+- Reviewable field-mapping suggestions, manual mapping, and row validation.
+- Duplicate matching, controlled create/update behavior, and per-row results.
+- Import history, progress, cancellation, and failed-row export.
 
-- GLPI 11.0.8 and later in the GLPI 11 series
-- PHP version required by the installed GLPI release
+## Screenshots
 
-## Design
+**Create and manage models**
 
-The importer discovers active custom asset definitions through GLPI's `AssetDefinitionManager`, resolves each definition to its runtime asset itemtype, and obtains fields through GLPI's search-option APIs. Imports will create and update items through the item's `CommonDBTM` methods so GLPI permissions, validation, history, and lifecycle hooks remain in effect.
+![Model management](docs/screenshots/model-management.png)
 
-This is an in-process GLPI plugin. It does not require an external REST API token or bypass GLPI's item APIs with direct database writes. “Modern API” here refers to GLPI's current plugin and itemtype APIs; the standalone REST API is a separate integration option and should not be used for internal plugin writes.
+**Upload a CSV**
+
+![CSV upload](docs/screenshots/csv-upload.png)
+
+**Preview imported rows**
+
+![CSV preview](docs/screenshots/preview.png)
+
+**Review import results**
+
+![Import results](docs/screenshots/import-results.png)
+
+## Install
+
+GLPI Inject supports GLPI **11.0.8 and later in the GLPI 11 series**. Use the PHP version supported by your GLPI installation.
+
+1. Download the [latest release archive](https://github.com/CarltonTrailCollege/glpi-inject/releases/download/v0.1.0-beta.12/glpiinject-0.1.0-beta.12.tar.gz).
+2. Extract the `glpiinject` directory into your GLPI `plugins/` directory.
+3. In GLPI, open **Setup > Plugins**, then install and activate GLPI Inject.
+4. Give the intended administrators the GLPI configuration permissions required to access the plugin.
+
+For deployment from a Debian GLPI host, the repository includes an installer. It copies the plugin, then runs GLPI's console as the web-server user:
+
+```bash
+sudo bash scripts/install-debian.sh --glpi-dir /var/www/glpi --web-user www-data
+```
+
+Replace `/var/www/glpi` and `www-data` with values for your server. The GLPI console and PHP CLI must be available on that host. Do not run this deployment script from a Windows development checkout unless the GLPI path is actually mounted there.
 
 ## Import workflow
 
-1. Create a reusable model and select an asset type, including a custom asset.
-2. Upload a CSV and configure its delimiter, encoding, and header handling.
-3. Map CSV columns to fields exposed by the selected GLPI itemtype.
-4. Preview and validate rows, including required fields and duplicate matching.
-5. Run the import and review per-row success and error results.
+1. Create a model, choose the asset type, and configure its CSV and import options.
+2. Select the model in **Import CSV**, upload the file, and configure its delimiter, encoding, and header row.
+3. Review the suggested mappings. Apply suggestions only fills blank mappings with a single unambiguous match; saved or manually selected mappings are left unchanged. Choose uncertain or unmatched fields yourself.
+4. Set required values and duplicate-matching behavior, then save the mapping.
+5. Review the preview and validation messages. Launch the import only when the mappings and sample rows look right.
+6. Follow progress and inspect the per-row results. Failed rows can be exported for correction.
 
-The mapping table suggests destinations when a CSV header matches an available field name after normalizing case, punctuation, and common singular/plural forms. Apply suggestions fills only blank mappings; saved or manually selected mappings are left alone. Ambiguous and unmatched headers are identified for manual review, and suggestions are not saved until Save mapping is selected.
+## Mapping and validation
 
-Preview Result Size supports 1, 10, 50, 100, 500, 1000, or 10000 rows (default 10), remembered for the current session. Changing the selection refreshes preview only; imports still process the full CSV. Large previews may take longer to validate and render.
+### Suggestions and destinations
 
-Preview validation covers only the displayed rows and reflects the database at preview time. Referenced dropdowns must resolve uniquely within the applicable entity scope. Tree dropdowns such as Locations try an exact full hierarchy path before a leaf-name lookup. Ambiguous references fail without selecting an arbitrary record or creating another duplicate; provide a unique full path or reconcile duplicate records in GLPI.
+Suggestions compare CSV headers with fields available for the selected asset type. Matching ignores case and punctuation and supports simple singular/plural variations. Suggestions are not saved automatically; **Apply suggestions** fills eligible dropdowns, and **Save mapping** persists the reviewed choices.
 
-The Preview Columns menu shows or hides individual CSV columns, with Show all and Hide all actions. Line and Validation remain visible. Preferences are remembered per model in the current browser tab when storage is available, and reset when CSV headers change. Column visibility never changes mappings or imported data.
+The selected mapping option also determines the GLPI destination. For linked fields such as Location, User, Budget, and Supplier, the importer resolves the reference and stores its ID in the appropriate relation field. Budget and Supplier values are stored in the asset's financial information (Infocom).
 
-Financial and administrative mappings include Budget and Supplier by name. Their IDs are saved on the asset's Infocom record, independently of any asset-level supplier mapping. Existing accessible values are reused; missing Budget and Supplier records may be created when Allow creation of dropdowns is enabled and GLPI permissions allow it. Preview never creates these records.
+### Required values
 
-For User mappings against the username field, the importer automatically tries the username first, then an exact first-name plus last-name match, including compound names. This behavior is inherent and has no checkbox. Repeated whitespace in the CSV full name is normalized. Only a unique readable, non-deleted full-name match is accepted; ambiguous matches fail and require a username. The same resolution is used by preview and import, and missing user accounts are never created. Legacy full-name-fallback settings are ignored.
+The **Required** checkbox means a mapped CSV value cannot be blank for an imported row. A blank value fails that row; it does not change whether the GLPI field is required elsewhere in GLPI.
 
-Selecting a model loads its upload settings automatically. After loading a CSV, a success message appears below the upload buttons and Continue takes you to column mapping. New models default to comma-separated CSV. Automatic encoding detection supports UTF-8, UTF-16 little/big endian, and Windows-1252 fallback, using the same detection for preview and batch imports.
+### References and preview
 
-Duplicate matching defaults to Name, including for older models with no saved matching field. Another standard matching field can be selected; the always-create mode is no longer available. Creation and update remain controlled by the model's respective behavior options.
+- Referenced values must resolve uniquely within the applicable entity scope. Ambiguous matches fail rather than selecting an arbitrary record.
+- Tree dropdowns such as Locations try a full hierarchy path before a leaf-name lookup. Use the full path when names are duplicated.
+- If **Allow creation of dropdowns** is enabled and GLPI permissions allow it, eligible missing dropdown values may be created during import. Preview does not create them, and Entities are never created.
+- User mappings try username first, then an exact first-name plus last-name match. The full-name match must be unique and readable; user accounts are never created.
+- Preview checks only the displayed rows and reflects database state at preview time. Choose 1, 10, 50, 100, 500, 1,000, or 10,000 rows. Imports still process the full file.
+- Date and number values are normalized using the model's configured formats. For ambiguous dates such as `5/8/2026`, choose the intended order in the model settings.
+- The saved upload is the snapshot GLPI imports. Re-upload the CSV to use changes made to the original file; the current successful upload time is shown with the model.
 
-The current development slice follows the original plugin's model-picker-first import flow and separate model-management screen. It implements reusable model create/edit/delete with General/CSV/Advanced tabs, CSV upload (10 MB limit), encoding/delimiter/header selection, a four-part destination type/field/link-field/mandatory mapper, a configurable preview, column-count and value validation, linked dropdown lookup, optional safe dropdown creation, date/number/boolean normalization, duplicate matching by a standard field, create/update imports, confirmation prompts, per-row results, failed-row CSV export, persistent run history, and ten-row AJAX batch progress with staged input rows. Standard GLPI assets and active custom asset definitions are discovered dynamically. Custom fields are passed to GLPI using their `custom_<system_name>` names, and GLPI item methods perform persistence.
+## Beta status and limitations
 
-The upstream Data Injection plugin still uses a fixed injectable-type registry, so its itemtype-specific injection code cannot handle GLPI custom asset definitions directly. Its reusable UI/workflow conventions are being used as the reference while the dynamic target layer uses GLPI runtime asset definitions and item APIs.
+This is beta software. Current compatibility claims are limited to GLPI 11.0.8 and later in the GLPI 11 series. The automated tests include provider and importer regressions, but they do not replace end-to-end testing against real GLPI installations and databases.
 
-Remaining parity work includes broader GLPI datatype and dropdown coverage, model sharing/profile rights, and complex relation-object imports. Linked mappings resolve existing records by the displayed field, with full-path fallback for tree dropdowns. When enabled, missing dropdown values (including Locations) are created through GLPI with existing-value checks; entities are never created. Preview validates without creating dropdowns. Asset creation and update options apply independently of dropdown creation.
+The importer is not fully transactional, and different user sessions are not protected by database-level coordination. A later failure can leave earlier writes in place, and simultaneous runs or dropdown creation may race. Avoid running the same model concurrently or editing/replacing its CSV while an import is active. Integration coverage, concurrency protection, and failure recovery remain tracked hardening work; see [SECURITY.md](SECURITY.md).
 
-Date and datetime fields normalize common year-first, month-first, and day-first values, with optional times, into GLPI storage format. The selected date format takes precedence for ambiguous dates; choose month-day-year for CSV values such as `5/8/2026` meaning May 8.
+## Development
 
-## Release packaging
-
-Build the installable archive from the repository root with PHP CLI:
-
-```bash
-php scripts/package-release.php
-```
-
-The script writes `dist/glpiinject-<version>.tar.gz`. The archive contains a top-level `glpiinject/` directory and only plugin runtime files, metadata, and documentation; it excludes tests, deployment scripts, and repository history. Verify the archive structure with:
-
-```bash
-tar -tzf dist/glpiinject-<version>.tar.gz
-```
-
-Pushing a `v<version>` tag that matches `PLUGIN_GLPIINJECT_VERSION` in `setup.php` runs the release workflow, validates the package root, and attaches the archive to a GitHub Release. The existing alpha.38 tag predates this workflow; alpha.40 established the corrected workflow. Update the version, catalog version entry, and download URL together for each release.
-
-The beta catalog manifest, artwork, screenshots, and release archive are publicly available. A catalog listing must be accepted before Marketplace review can be requested; these are separate approvals tracked in [issue #6](https://github.com/CarltonTrailCollege/glpi-inject/issues/6). Real-GLPI integration coverage and cross-session import reliability are planned as post-release work; see [SECURITY.md](SECURITY.md) for the known limitations and reporting process.
-
-## Quality checks
-
-Install the pinned development tools and run the same checks as CI:
+The quality checks use the pinned Composer and npm tools:
 
 ```bash
 composer install
@@ -79,32 +96,24 @@ npm ci
 composer check
 ```
 
-The checks run GLPI's PHP coding standard on production PHP files, TwigCS on templates, ESLint on inline template JavaScript, PHPStan level 1 against a sibling GLPI 11 checkout at `../glpi-core`, and the regression scripts with PHP assertions enabled. GLPI's documented `glpi-project/coding-standard` package is archived upstream but remains the official published ruleset; it is pinned in the lockfile so checks are reproducible. CI checks out GLPI's `11.0/bugfixes` branch automatically. To run PHPStan locally, clone that branch beside this repository:
+PHPStan uses a sibling GLPI 11 checkout. For local analysis, place the GLPI `11.0/bugfixes` branch at `../glpi-core`:
 
 ```bash
 git clone --depth 1 --branch 11.0/bugfixes https://github.com/glpi-project/glpi.git ../glpi-core
 ```
 
-## Installation for development
-
-GLPI Inject is intended to be installed on the Debian host where GLPI is running. Clone this repository on that host, then run the installer with the GLPI root and web-server account:
+Build a release archive from the repository root with:
 
 ```bash
-git clone https://github.com/CarltonTrailCollege/glpi-inject.git
-cd glpi-inject
-sudo bash scripts/install-debian.sh --glpi-dir /var/www/glpi --web-user www-data
+php scripts/package-release.php
 ```
 
-The installer copies the plugin into `GLPI/plugins/glpiinject/`, sets it readable by the GLPI web-server group, then runs `plugin:install --force` and `plugin:activate` using GLPI's console as `www-data`. `--force` also reruns the plugin's install/migration hook when deploying updates. Replace `/var/www/glpi` if your GLPI root is elsewhere. The GLPI console and PHP CLI must be installed on the Debian host.
+Release tags use the `v<version>` format and must match `PLUGIN_GLPIINJECT_VERSION` in `setup.php`. Pushing a matching tag runs the packaging workflow and publishes a GitHub prerelease.
 
-To cleanly uninstall it:
+## Security and support
 
-```bash
-sudo bash scripts/uninstall-debian.sh --glpi-dir /var/www/glpi --web-user www-data
-```
+Report suspected vulnerabilities through [GitHub private vulnerability reporting](https://github.com/CarltonTrailCollege/glpi-inject/security/advisories/new). Use [GitHub Issues](https://github.com/CarltonTrailCollege/glpi-inject/issues) for bugs and feature requests.
 
-The uninstaller asks you to type `yes`, invokes `plugin:uninstall` so the plugin hook drops its model/run tables and removes its uploaded CSV directory, and only then removes `plugins/glpiinject`. For automation, append `--yes` to skip the confirmation. This permanently removes saved import models, run history/logs, and uploaded CSV files.
+CSV uploads and import logs may contain personal or inventory data. Restrict access to the plugin, protect GLPI backups and its document directory, and define an appropriate retention policy. Uninstalling the plugin removes its models, import history, logs, and uploaded CSV files.
 
-You can also install and activate through **Setup > Plugins** after copying the repository contents into `GLPI/plugins/glpiinject/`. The scripts are intended for a Debian GLPI host; do not run them from the Windows development checkout unless that path is actually mounted on the Debian server.
-
-Release tags use Semantic Versioning. Prereleases use SemVer identifiers such as `0.1.0-beta.8`; the matching GitHub tag is `v0.1.0-beta.8`.
+GLPI Inject is licensed under [GPL-2.0-or-later](LICENSE). Catalog metadata is maintained in [glpiinject.xml](glpiinject.xml).
