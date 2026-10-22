@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-beta.11] - 2026-10-22
+
+### Changed
+
+- Clarify the mapping requirement checkbox with a Required label, row-validation guidance, and column-specific accessible names.
+
 ## [0.1.0-beta.10] - 2026-10-22
 
 ### Added
