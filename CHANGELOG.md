@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.0-beta.9] - 2026-10-22
+
+### Added
+
+- Add horizontal scrolling and adjustable, session-persisted column widths to the CSV preview.
+
 ## [0.1.0-beta.8] - 2026-10-21
 
 ### Fixed
